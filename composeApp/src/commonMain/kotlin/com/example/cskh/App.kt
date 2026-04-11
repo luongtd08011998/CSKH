@@ -5,14 +5,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
+import androidx.navigation.toRoute
 import com.example.cskh.data.session.SessionManager
 import com.example.cskh.di.appModule
-import com.example.cskh.presentation.navigation.NavRoutes
+import com.example.cskh.presentation.navigation.Screen
 import com.example.cskh.presentation.screens.customer.CustomerProfileScreen
 import com.example.cskh.presentation.screens.home.HomeScreen
 import com.example.cskh.presentation.screens.invoices.InvoiceDetailScreen
@@ -43,11 +42,11 @@ fun App() {
 private fun MainNavHost() {
     val sessionManager = koinInject<SessionManager>()
     val navController = rememberNavController()
-    val startDestination = remember {
+    val startDestination: Screen = remember {
         if (!sessionManager.accessToken.isNullOrBlank()) {
-            NavRoutes.HOME
+            Screen.Home
         } else {
-            NavRoutes.LOGIN
+            Screen.Login
         }
     }
 
@@ -55,55 +54,50 @@ private fun MainNavHost() {
         navController = navController,
         startDestination = startDestination,
     ) {
-        composable(NavRoutes.LOGIN) {
+        composable<Screen.Login> {
             LoginScreen(
                 onLoggedIn = {
-                    navController.navigate(NavRoutes.HOME) {
-                        popUpTo(NavRoutes.LOGIN) { inclusive = true }
+                    navController.navigate(Screen.Home) {
+                        popUpTo<Screen.Login> { inclusive = true }
                     }
                 },
             )
         }
-        composable(NavRoutes.HOME) {
+        composable<Screen.Home> {
             HomeScreen(
-                onNavigateInvoices = { navController.navigate(NavRoutes.INVOICES) },
-                onNavigateCustomerProfile = { navController.navigate(NavRoutes.CUSTOMER_PROFILE) },
-                onNavigateWaterPrice = { navController.navigate(NavRoutes.WATER_PRICE) },
-                onNavigateAbout = { navController.navigate(NavRoutes.ABOUT) },
+                onNavigateInvoices = { navController.navigate(Screen.Invoices) },
+                onNavigateCustomerProfile = { navController.navigate(Screen.CustomerProfile) },
+                onNavigateWaterPrice = { navController.navigate(Screen.WaterPrice) },
+                onNavigateAbout = { navController.navigate(Screen.About) },
                 onLogout = {
-                    navController.navigate(NavRoutes.LOGIN) {
-                        popUpTo(NavRoutes.HOME) { inclusive = true }
+                    navController.navigate(Screen.Login) {
+                        popUpTo<Screen.Home> { inclusive = true }
                     }
                 },
             )
         }
-        composable(NavRoutes.INVOICES) {
+        composable<Screen.Invoices> {
             InvoiceListScreen(
                 onBack = { navController.popBackStack() },
                 onOpenDetail = { id ->
-                    navController.navigate(NavRoutes.invoiceDetail(id))
+                    navController.navigate(Screen.InvoiceDetail(id))
                 },
             )
         }
-        composable(
-            route = NavRoutes.INVOICE_DETAIL,
-            arguments = listOf(
-                navArgument("id") { type = NavType.LongType },
-            ),
-        ) { entry ->
-            val id = entry.arguments?.getLong("id") ?: return@composable
+        composable<Screen.InvoiceDetail> { entry ->
+            val route: Screen.InvoiceDetail = entry.toRoute()
             InvoiceDetailScreen(
-                invoiceId = id,
+                invoiceId = route.id,
                 onBack = { navController.popBackStack() },
             )
         }
-        composable(NavRoutes.CUSTOMER_PROFILE) {
+        composable<Screen.CustomerProfile> {
             CustomerProfileScreen(onBack = { navController.popBackStack() })
         }
-        composable(NavRoutes.WATER_PRICE) {
+        composable<Screen.WaterPrice> {
             WaterPriceScreen(onBack = { navController.popBackStack() })
         }
-        composable(NavRoutes.ABOUT) {
+        composable<Screen.About> {
             AboutScreen(onBack = { navController.popBackStack() })
         }
     }

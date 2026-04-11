@@ -1,13 +1,26 @@
 package com.example.cskh.presentation.navigation
 
-object NavRoutes {
-    const val LOGIN = "login"
-    const val HOME = "home"
-    const val INVOICES = "invoices"
-    const val INVOICE_DETAIL = "invoice/{id}"
-    const val WATER_PRICE = "water_price"
-    const val ABOUT = "about"
-    const val CUSTOMER_PROFILE = "customer_profile"
+import kotlinx.serialization.Serializable
 
-    fun invoiceDetail(id: Long): String = "invoice/$id"
+sealed interface Screen {
+    @Serializable
+    data object Login : Screen
+
+    @Serializable
+    data object Home : Screen
+
+    @Serializable
+    data object Invoices : Screen
+
+    @Serializable
+    data class InvoiceDetail(val id: Long) : Screen
+
+    @Serializable
+    data object CustomerProfile : Screen
+
+    @Serializable
+    data object WaterPrice : Screen
+
+    @Serializable
+    data object About : Screen
 }
