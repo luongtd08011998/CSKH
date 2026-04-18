@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!--
+      WARNING:
+      This trusts a bundled self-signed certificate for the IP below.
+      Use only for internal/testing. For production, use a real domain + publicly trusted CA.
+    -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="false">125.253.121.171</domain>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="@raw/server" />
+        </trust-anchors>
+    </domain-config>
+
+    <!-- Allow local HTTP during development -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <!-- Android emulator -> host machine -->
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <!-- Genymotion emulator -> host machine -->
+        <domain includeSubdomains="false">10.0.3.2</domain>
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </domain-config>
+</network-security-config>
