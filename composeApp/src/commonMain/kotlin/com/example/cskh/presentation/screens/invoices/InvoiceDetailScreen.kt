@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -31,10 +32,12 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Park
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -47,9 +50,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -60,8 +68,13 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
 import com.example.cskh.domain.model.InvoiceDetail
+import com.example.cskh.platform.QrPngSaver
 import com.example.cskh.util.formatVnd
+import kotlin.math.roundToLong
+import kotlinx.coroutines.launch
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -75,7 +88,52 @@ private val paidGreenBorder = Color(0xFFA5D6A7)
 private val warnOrangeBg = Color(0xFFFFF3E0)
 private val warnOrangeBorder = Color(0xFFFFCC80)
 
+private const val VietQrBankId = "970415"
+private const val VietQrAccountNo = "0359423852"
+private const val VietQrTemplate = "print"
+private const val VietQrAccountName = "TRAN DUC LUONG"
+
 private enum class InvoicePaymentKind { Paid, Unpaid, Other }
+
+private val HexUpper = "0123456789ABCDEF"
+
+/** RFC 3986 percent-encoding (UTF-8) for query components. */
+private fun String.percentEncode(): String {
+    val bytes = encodeToByteArray()
+    return buildString(bytes.size * 3) {
+        for (element in bytes) {
+            val b = element.toUByte().toInt()
+            when {
+                b in 0x41..0x5A || b in 0x61..0x7A || b in 0x30..0x39 -> append(b.toChar())
+                b == 0x2D || b == 0x5F || b == 0x2E || b == 0x7E -> append(b.toChar())
+                else -> append('%').append(HexUpper[b shr 4]).append(HexUpper[b and 0x0F])
+            }
+        }
+    }
+}
+
+private fun buildVietQrQuickLinkUrl(detail: InvoiceDetail): String {
+    val code = detail.digiCode?.trim().orEmpty()
+    val ym = detail.yearMonth?.trim().orEmpty()
+    val addInfo = buildString {
+        append("TOCTIEN ")
+        if (code.isNotEmpty()) append("$code ")
+        if (ym.isNotEmpty()) append(ym)
+
+    }
+    val total = detail.totalAmount ?: (detail.amount + detail.envFee + detail.taxFee)
+    val amount = total.roundToLong()
+    val base = "https://img.vietqr.io/image/$VietQrBankId-$VietQrAccountNo-$VietQrTemplate.png"
+    return buildString {
+        append(base)
+        append("?amount=")
+        append(amount)
+        append("&addInfo=")
+        append(addInfo.percentEncode())
+        append("&accountName=")
+        append(VietQrAccountName.percentEncode())
+    }
+}
 
 private fun InvoiceDetail.paymentKind(): InvoicePaymentKind {
     val label = paymentStatusLabel
@@ -102,6 +160,7 @@ fun InvoiceDetailScreen(
     val viewModel: InvoiceDetailViewModel = koinViewModel(parameters = { parametersOf(invoiceId) })
     val state by viewModel.state.collectAsState()
     val clipboard = LocalClipboardManager.current
+    var showVietQrDialog by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -137,6 +196,9 @@ fun InvoiceDetailScreen(
                             }
                             clipboard.setText(AnnotatedString(text))
                         },
+                        onDownloadEInvoiceZip = { viewModel.onDownloadEInvoiceZip() },
+                        isEInvoiceDownloading = state.isEInvoiceDownloading,
+                        eInvoiceMessage = state.eInvoiceMessage,
                     )
                     Column(
                         modifier = Modifier
@@ -157,7 +219,11 @@ fun InvoiceDetailScreen(
                         when (kind) {
                             InvoicePaymentKind.Unpaid -> {
                                 Spacer(modifier = Modifier.height(12.dp))
-                                UnpaidActionsRow()
+                                UnpaidActionsRow(
+                                    onDownload = { viewModel.onDownloadEInvoiceZip() },
+                                    isEInvoiceDownloading = state.isEInvoiceDownloading,
+                                    onPayInvoice = { showVietQrDialog = true },
+                                )
                                 Spacer(modifier = Modifier.height(12.dp))
                                 UnpaidWarningCard(d)
                             }
@@ -200,7 +266,104 @@ fun InvoiceDetailScreen(
                 }
             }
         }
+        if (showVietQrDialog && state.detail != null) {
+            val d = state.detail!!
+            VietQrPaymentDialog(
+                imageUrl = buildVietQrQuickLinkUrl(d),
+                onDismiss = { showVietQrDialog = false },
+            )
+        }
     }
+}
+
+@Composable
+private fun VietQrPaymentDialog(
+    imageUrl: String,
+    onDismiss: () -> Unit,
+) {
+    val qrPngSaver = koinInject<QrPngSaver>()
+    val scope = rememberCoroutineScope()
+    var isSavingQr by remember { mutableStateOf(false) }
+    var saveFeedback by remember { mutableStateOf<String?>(null) }
+    var saveFeedbackIsError by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TextButton(
+                    onClick = {
+                        if (isSavingQr) return@TextButton
+                        scope.launch {
+                            isSavingQr = true
+                            saveFeedback = null
+                            qrPngSaver.savePngFromUrl(imageUrl).fold(
+                                onSuccess = {
+                                    saveFeedback = it
+                                    saveFeedbackIsError = false
+                                },
+                                onFailure = { e ->
+                                    saveFeedback = e.message ?: "Không lưu được ảnh"
+                                    saveFeedbackIsError = true
+                                },
+                            )
+                            isSavingQr = false
+                        }
+                    },
+                    enabled = !isSavingQr,
+                ) {
+                    if (isSavingQr) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            strokeWidth = 2.dp,
+                        )
+                    } else {
+                        Icon(Icons.Filled.Save, contentDescription = null, modifier = Modifier.size(18.dp))
+                    }
+                    Spacer(modifier = Modifier.size(6.dp))
+                    Text("Lưu mã QR")
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                TextButton(onClick = onDismiss, enabled = !isSavingQr) {
+                    Text("Đóng")
+                }
+            }
+        },
+        title = {
+            Text(
+                "Thanh toán qua VietQR",
+                style = MaterialTheme.typography.titleLarge,
+            )
+        },
+        text = {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = "Mã QR VietQR thanh toán",
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                saveFeedback?.let { msg ->
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text(
+                        text = msg,
+                        color = if (saveFeedbackIsError) {
+                            MaterialTheme.colorScheme.error
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+        },
+    )
 }
 
 @Composable
@@ -208,6 +371,9 @@ private fun DetailHeader(
     detail: InvoiceDetail,
     onBack: () -> Unit,
     onShare: () -> Unit,
+    onDownloadEInvoiceZip: () -> Unit,
+    isEInvoiceDownloading: Boolean,
+    eInvoiceMessage: String?,
 ) {
     Column(
         modifier = Modifier
@@ -288,6 +454,60 @@ private fun DetailHeader(
                         color = Color.White.copy(alpha = 0.85f),
                     )
                     StatusPill(detail)
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedButton(
+                    onClick = onDownloadEInvoiceZip,
+                    enabled = !isEInvoiceDownloading,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.85f)),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = Color.White,
+                        disabledContentColor = Color.White.copy(alpha = 0.5f),
+                    ),
+                ) {
+                    if (isEInvoiceDownloading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp,
+                        )
+                    } else {
+                        Icon(Icons.Filled.Download, contentDescription = null, modifier = Modifier.size(20.dp))
+                    }
+                    Spacer(modifier = Modifier.size(8.dp))
+                    Text("Tải hóa đơn điện tử (.zip)")
+                }
+                eInvoiceMessage?.let { msg ->
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Surface(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        color = Color(0xFF1B5E20).copy(alpha = 0.35f),
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.Top,
+                        ) {
+                            Icon(
+                                Icons.Filled.CheckCircle,
+                                contentDescription = null,
+                                tint = Color(0xFFA5D6A7),
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Text(
+                                text = msg,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color(0xFFC8E6C9),
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -701,26 +921,18 @@ private fun DateBox(
 }
 
 @Composable
-private fun UnpaidActionsRow() {
+private fun UnpaidActionsRow(
+    onDownload: () -> Unit,
+    isEInvoiceDownloading: Boolean,
+    onPayInvoice: () -> Unit,
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
-        OutlinedButton(
-            onClick = { /* TODO: tải PDF / hóa đơn khi có API */ },
-            modifier = Modifier
-                .weight(1f)
-                .height(52.dp),
-            shape = RoundedCornerShape(16.dp),
-            border = BorderStroke(2.dp, Color(0xFF1976D2)),
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF1976D2)),
-        ) {
-            Icon(Icons.Filled.Download, null, modifier = Modifier.size(20.dp))
-            Spacer(modifier = Modifier.size(8.dp))
-            Text("Tải về")
-        }
+
         Button(
-            onClick = { /* TODO: cổng thanh toán */ },
+            onClick = onPayInvoice,
             modifier = Modifier
                 .weight(1f)
                 .height(52.dp),
@@ -729,7 +941,13 @@ private fun UnpaidActionsRow() {
         ) {
             Icon(Icons.Filled.CreditCard, null, modifier = Modifier.size(20.dp), tint = Color.White)
             Spacer(modifier = Modifier.size(8.dp))
-            Text("Thanh toán", color = Color.White)
+            Text(
+                "Thanh toán hóa đơn",
+                color = Color.White,
+                style = MaterialTheme.typography.labelLarge,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+            )
         }
     }
 }

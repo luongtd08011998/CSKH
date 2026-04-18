@@ -11,11 +11,18 @@ import com.example.cskh.domain.preferences.UserFormStore
 import com.example.cskh.domain.repository.AuthRepository
 import com.example.cskh.domain.repository.CustomerRepository
 import com.example.cskh.domain.repository.InvoiceRepository
+import com.example.cskh.domain.usecase.DownloadAndSaveEInvoiceZipUseCase
 import com.example.cskh.domain.usecase.GetCustomerMeUseCase
 import com.example.cskh.domain.usecase.GetInvoiceDetailUseCase
 import com.example.cskh.domain.usecase.GetInvoicesUseCase
 import com.example.cskh.domain.usecase.LoginUseCase
 import com.example.cskh.domain.usecase.UserFormPreferencesUseCase
+import com.example.cskh.platform.BinaryGetDownloader
+import com.example.cskh.platform.InvoiceZipSaver
+import com.example.cskh.platform.InvoiceZipSaverImpl
+import com.example.cskh.platform.QrPngSaver
+import com.example.cskh.platform.QrPngSaverImpl
+import com.example.cskh.platform.createBinaryGetDownloader
 import com.example.cskh.presentation.screens.customer.CustomerProfileViewModel
 import com.example.cskh.presentation.screens.home.HomeViewModel
 import com.example.cskh.presentation.screens.invoices.InvoiceDetailViewModel
@@ -29,6 +36,7 @@ import org.koin.dsl.module
 val appModule = module {
     single { JsonConfig.json }
     single<HttpClient> { createAppHttpClient(get()) }
+    single<BinaryGetDownloader> { createBinaryGetDownloader() }
     single { SessionManager() }
     single<Settings> { Settings() }
     single<UserFormStore> { UserPreferences(get()) }
@@ -36,13 +44,16 @@ val appModule = module {
     single { LoginUseCase(get()) }
     single { GetInvoicesUseCase(get()) }
     single { GetInvoiceDetailUseCase(get()) }
+    single<InvoiceZipSaver> { InvoiceZipSaverImpl() }
+    single<QrPngSaver> { QrPngSaverImpl() }
+    single { DownloadAndSaveEInvoiceZipUseCase(get(), get()) }
     single { GetCustomerMeUseCase(get()) }
     single<AuthRepository> { AuthRepositoryImpl(get()) }
-    single<InvoiceRepository> { InvoiceRepositoryImpl(get(), get()) }
+    single<InvoiceRepository> { InvoiceRepositoryImpl(get(), get(), get()) }
     single<CustomerRepository> { CustomerRepositoryImpl(get(), get()) }
     viewModel { LoginViewModel(get(), get(), get()) }
     viewModel { HomeViewModel(get()) }
     viewModel { InvoiceListViewModel(get(), get()) }
     viewModel { CustomerProfileViewModel(get(), get()) }
-    viewModel { (id: Long) -> InvoiceDetailViewModel(get(), get(), id) }
+    viewModel { (id: Long) -> InvoiceDetailViewModel(get(), get(), get(), id) }
 }

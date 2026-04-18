@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.cskh.data.session.SessionManager
 import com.example.cskh.domain.usecase.LoginUseCase
 import com.example.cskh.domain.usecase.UserFormPreferencesUseCase
+import com.example.cskh.platform.defaultDevMachineApiBaseUrl
 import com.example.cskh.presentation.CompanyBranding
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -53,7 +54,7 @@ class LoginViewModel(
     fun login(onSuccess: () -> Unit) {
         val s = _state.value
         if (s.isLoading) return
-        val baseUrl = CompanyBranding.DEFAULT_API_BASE_URL
+        val baseUrl = defaultDevMachineApiBaseUrl(CompanyBranding.DEV_API_PORT)
         if (s.digiCode.isBlank() || s.phone.isBlank()) {
             _state.update { it.copy(errorMessage = "Vui lòng nhập đủ mã và số điện thoại") }
             return

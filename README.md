@@ -30,6 +30,19 @@ in your IDE’s toolbar or build it directly from the terminal:
 To build and run the development version of the iOS app, use the run configuration from the run widget
 in your IDE’s toolbar or open the [/iosApp](./iosApp) directory in Xcode and run it from there.
 
+#### Notes for CLI builds
+
+- If you run the iOS Gradle tasks from Terminal (instead of via Xcode), `syncComposeResourcesForIos` needs Xcode-like inputs.
+  You can pass them explicitly:
+
+  ```shell
+  ./gradlew :composeApp:embedAndSignAppleFrameworkForXcode \
+    -Pcompose.ios.resources.platform=iphonesimulator \
+    -Pcompose.ios.resources.archs=arm64
+  ```
+
+- For actual app builds, prefer `xcodebuild` / Xcode so the required environment variables (like `ARCHS`, `PLATFORM_NAME`, `CONFIGURATION`) are provided automatically.
+
 ---
 
 Learn more about [Kotlin Multiplatform](https://www.jetbrains.com/help/kotlin-multiplatform-dev/get-started.html)…
