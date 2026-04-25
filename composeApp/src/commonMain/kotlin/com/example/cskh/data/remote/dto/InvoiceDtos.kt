@@ -26,13 +26,13 @@ data class InvoiceListItemDto(
     val digiCode: String,
     val customerName: String,
     val amount: Double,
-    val envFee: Double,
-    val taxFee: Double,
-    val totalAmount: Double,
-    val paymentStatus: Int,
-    val paymentStatusLabel: String,
-    val oldVal: Int,
-    val newVal: Int,
+    val envFee: Double? = null,
+    val taxFee: Double? = null,
+    val totalAmount: Double? = null,
+    val paymentStatus: Int? = null,
+    val paymentStatusLabel: String? = null,
+    val oldVal: Int? = null,
+    val newVal: Int? = null,
 )
 
 @Serializable
@@ -66,13 +66,13 @@ fun InvoiceListItemDto.toDomain(): InvoiceSummary = InvoiceSummary(
     digiCode = digiCode,
     customerName = customerName,
     amount = amount,
-    envFee = envFee,
-    taxFee = taxFee,
-    totalAmount = totalAmount,
-    paymentStatus = paymentStatus,
-    paymentStatusLabel = paymentStatusLabel,
-    oldVal = oldVal,
-    newVal = newVal,
+    envFee = envFee ?: 0.0,
+    taxFee = taxFee ?: 0.0,
+    totalAmount = totalAmount ?: (amount + (envFee ?: 0.0) + (taxFee ?: 0.0)),
+    paymentStatus = paymentStatus ?: 0,
+    paymentStatusLabel = paymentStatusLabel.orEmpty(),
+    oldVal = oldVal ?: 0,
+    newVal = newVal ?: 0,
 )
 
 fun InvoiceDetailDto.toDomain(): InvoiceDetail {

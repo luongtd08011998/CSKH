@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.cskh.data.session.SessionManager
 import com.example.cskh.domain.usecase.LoginUseCase
 import com.example.cskh.domain.usecase.UserFormPreferencesUseCase
+import com.example.cskh.platform.FcmDeviceSync
 import com.example.cskh.platform.defaultDevMachineApiBaseUrl
 import com.example.cskh.presentation.CompanyBranding
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +26,7 @@ class LoginViewModel(
     private val loginUseCase: LoginUseCase,
     private val formPreferences: UserFormPreferencesUseCase,
     private val sessionManager: SessionManager,
+    private val fcmDeviceSync: FcmDeviceSync,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(
@@ -69,7 +71,9 @@ class LoginViewModel(
                     } else {
                         formPreferences.saveForm("", "", baseUrl)
                     }
+                    formPreferences.saveAccessToken(token)
                     sessionManager.setToken(token)
+                    fcmDeviceSync.registerIfLoggedIn()
                     _state.update { it.copy(isLoading = false) }
                     onSuccess()
                 },

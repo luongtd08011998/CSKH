@@ -16,6 +16,9 @@ sealed interface Screen {
     data class InvoiceDetail(val id: Long) : Screen
 
     @Serializable
+    data object Notifications : Screen
+
+    @Serializable
     data object CustomerProfile : Screen
 
     @Serializable
@@ -23,4 +26,10 @@ sealed interface Screen {
 
     @Serializable
     data object About : Screen
+
+    @Serializable
+    data object PhanAnh : Screen
+
+    @Serializable
+    data object PhanAnhList : Screen
 }

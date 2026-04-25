@@ -2,7 +2,6 @@ package com.example.cskh.presentation.screens.customer
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,7 +10,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -22,15 +20,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Chat
-import androidx.compose.material.icons.automirrored.filled.Help
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Settings
@@ -73,6 +68,7 @@ private val headerGradient = Brush.verticalGradient(
 @Composable
 fun CustomerProfileScreen(
     onBack: () -> Unit,
+    onLogout: () -> Unit,
     viewModel: CustomerProfileViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -114,6 +110,10 @@ fun CustomerProfileScreen(
                     profile = state.profile!!,
                     onBack = onBack,
                     isRefreshing = state.isLoading,
+                    onLogout = {
+                        viewModel.logout()
+                        onLogout()
+                    },
                 )
             }
 
@@ -131,6 +131,7 @@ private fun CustomerProfileScrollContent(
     profile: CustomerProfile,
     onBack: () -> Unit,
     isRefreshing: Boolean,
+    onLogout: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -260,8 +261,7 @@ private fun CustomerProfileScrollContent(
             ContactCard(profile)
             ExtraInfoCard(profile)
             AccountStatusCard(profile)
-            SettingsMenuCard()
-            UpdateButtonBar()
+            LogoutButton(onLogout = onLogout)
         }
     }
 }
@@ -521,66 +521,23 @@ private fun AccountStatusTile(
 }
 
 @Composable
-private fun SettingsMenuCard() {
-    Surface(
+private fun LogoutButton(onLogout: () -> Unit) {
+    Button(
+        onClick = onLogout,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        color = Color.White,
-        shadowElevation = 4.dp,
-    ) {
-        Column {
-            MenuRow(Icons.Filled.Notifications, Color(0xFFE3F2FD), Color(0xFF1976D2), "Thông báo")
-            HorizontalDivider(color = Color(0xFFF0F0F0))
-            MenuRow(Icons.Filled.Lock, Color(0xFFE8F5E9), Color(0xFF388E3C), "Bảo mật")
-            HorizontalDivider(color = Color(0xFFF0F0F0))
-            MenuRow(Icons.AutoMirrored.Filled.Help, Color(0xFFF3E5F5), Color(0xFF7B1FA2), "Trợ giúp")
-        }
-    }
-}
-
-@Composable
-private fun MenuRow(icon: ImageVector, iconBg: Color, iconTint: Color, label: String) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { }
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            Surface(shape = RoundedCornerShape(12.dp), color = iconBg) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier.padding(8.dp).size(22.dp),
-                    tint = iconTint,
-                )
-            }
-            Text(label, style = MaterialTheme.typography.bodyLarge, color = Color(0xFF212121))
-        }
-        Icon(
-            imageVector = Icons.Filled.ChevronRight,
-            contentDescription = null,
-            tint = Color(0xFFBDBDBD),
-        )
-    }
-}
-
-@Composable
-private fun UpdateButtonBar() {
-    Button(
-        onClick = { },
-        modifier = Modifier
-            .fillMaxWidth()
-            .navigationBarsPadding(),
-        shape = RoundedCornerShape(16.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = Color(0xFF1976D2),
-            contentColor = Color.White,
+            containerColor = MaterialTheme.colorScheme.error,
+            contentColor = MaterialTheme.colorScheme.onError,
         ),
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
     ) {
-        Text("Cập nhật thông tin", modifier = Modifier.padding(vertical = 6.dp))
+        Icon(
+            imageVector = Icons.Filled.Logout,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp),
+        )
+        Spacer(modifier = Modifier.size(10.dp))
+        Text("Đăng xuất", modifier = Modifier.padding(vertical = 6.dp))
     }
 }
