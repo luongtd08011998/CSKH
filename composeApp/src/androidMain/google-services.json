@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "550167229261",
+    "project_id": "cskh-33ee2",
+    "storage_bucket": "cskh-33ee2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:550167229261:android:4d11ed9e7b8b2413e07d04",
+        "android_client_info": {
+          "package_name": "com.toctienltd.cskh"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAscg0kS7Cavk7CxHj_ELJ8deP1olu9q8k"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

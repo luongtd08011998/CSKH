@@ -1,0 +1,34 @@
+package com.example.cskh.presentation
+
+import com.example.cskh.domain.model.NotificationItem
+import com.example.cskh.domain.usecase.GetNotificationsUseCase
+import com.example.cskh.domain.usecase.UserFormPreferencesUseCase
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+
+class NotificationBadgeStore(
+    private val getNotifications: GetNotificationsUseCase,
+    private val formPreferences: UserFormPreferencesUseCase,
+) {
+
+    private val _unreadCount = MutableStateFlow(0)
+    val unreadCount: StateFlow<Int> = _unreadCount.asStateFlow()
+
+    fun syncFromItems(items: List<NotificationItem>) {
+        _unreadCount.value = items.count { !it.isRead }
+    }
+
+    fun clear() {
+        _unreadCount.value = 0
+    }
+
+    suspend fun refreshFromNetwork() {
+        val baseUrl = formPreferences.getBaseUrl()
+        if (baseUrl.isBlank()) {
+            _unreadCount.value = 0
+            return
+        }
+        getNotifications(baseUrl).onSuccess { syncFromItems(it) }
+    }
+}
