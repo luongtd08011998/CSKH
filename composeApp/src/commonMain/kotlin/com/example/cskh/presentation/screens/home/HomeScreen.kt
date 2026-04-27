@@ -152,12 +152,7 @@ fun HomeScreen(
             HomeHero(
                 companyName = CompanyBranding.NAME,
                 customer = state.customer,
-                onOpenNotifications = onNavigateNotifications,
                 onOpenProfile = onNavigateCustomerProfile,
-                onLogout = {
-                    viewModel.logout()
-                    onLogout()
-                },
             )
 
             Box {
@@ -217,9 +212,7 @@ fun HomeScreen(
 private fun HomeHero(
     companyName: String,
     customer: CustomerProfile?,
-    onOpenNotifications: () -> Unit,
     onOpenProfile: () -> Unit,
-    onLogout: () -> Unit,
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -275,7 +268,6 @@ private fun HomeHero(
                             )
                         }
                     }
-
 
                 }
 

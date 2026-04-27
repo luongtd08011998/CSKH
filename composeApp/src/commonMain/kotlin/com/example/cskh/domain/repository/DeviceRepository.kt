@@ -7,4 +7,10 @@ interface DeviceRepository {
         deviceToken: String,
         accessToken: String,
     ): Result<Unit>
+
+    suspend fun unregisterDevice(
+        baseUrl: String,
+        deviceToken: String,
+        accessToken: String,
+    ): Result<Unit>
 }

@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -44,6 +45,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,6 +54,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
 import com.example.cskh.domain.model.CustomerProfile
 import org.koin.compose.viewmodel.koinViewModel
@@ -72,12 +76,34 @@ fun CustomerProfileScreen(
     viewModel: CustomerProfileViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
+    var showLogoutDialog by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(pageBackground),
     ) {
+        if (showLogoutDialog) {
+            AlertDialog(
+                onDismissRequest = { showLogoutDialog = false },
+                title = { Text("Xác nhận đăng xuất") },
+                text = {
+                    Text("Khi đăng xuất, bạn sẽ không nhận được thông báo về hóa đơn mới, bài viết và trạng thái hóa đơn.")
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            showLogoutDialog = false
+                            viewModel.logout()
+                            onLogout()
+                        },
+                    ) { Text("Đăng xuất") }
+                },
+                dismissButton = {
+                    androidx.compose.material3.TextButton(onClick = { showLogoutDialog = false }) { Text("Hủy") }
+                },
+            )
+        }
         when {
             state.isLoading && state.profile == null -> {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -111,8 +137,7 @@ fun CustomerProfileScreen(
                     onBack = onBack,
                     isRefreshing = state.isLoading,
                     onLogout = {
-                        viewModel.logout()
-                        onLogout()
+                        showLogoutDialog = true
                     },
                 )
             }

@@ -37,15 +37,13 @@ class NotificationRepositoryImpl(
         (envelope.data ?: emptyList()).map { it.toDomain() }
     }
 
-    override suspend fun markRead(baseUrl: String, ids: List<Long>?): Result<Unit> = runCatching {
+    override suspend fun markRead(baseUrl: String, ids: List<Long>?, isSystem: Boolean?): Result<Unit> = runCatching {
         val token = sessionManager.accessToken ?: error("Chưa đăng nhập")
         val url = "${normalizeApiBaseUrl(baseUrl)}/api/v1/qlkh/customer/notifications/read"
         val response = client.post(url) {
             header(HttpHeaders.Authorization, "Bearer $token")
             contentType(ContentType.Application.Json)
-            if (!ids.isNullOrEmpty()) {
-                setBody(MarkReadRequestDto(ids = ids))
-            }
+            setBody(MarkReadRequestDto(ids = ids, isSystem = isSystem))
         }
         if (response.status.value !in 200..299) {
             val text = runCatching { response.bodyAsText() }.getOrNull()

@@ -12,6 +12,8 @@ data class NotificationDto(
     val type: String? = null,
     val isRead: Boolean? = null,
     val createdAt: String? = null,
+    val referenceId: Long? = null,
+    val isSystem: Boolean? = null,
 )
 
 @Serializable
@@ -24,6 +26,7 @@ data class NotificationsResponseDto(
 @Serializable
 data class MarkReadRequestDto(
     val ids: List<Long>? = null,
+    val isSystem: Boolean? = null,
 )
 
 fun NotificationDto.toDomain(): NotificationItem = NotificationItem(
@@ -34,5 +37,7 @@ fun NotificationDto.toDomain(): NotificationItem = NotificationItem(
     type = type.orEmpty(),
     isRead = isRead ?: false,
     createdAt = createdAt.orEmpty(),
+    referenceId = referenceId,
+    isSystem = isSystem ?: false,
 )
 

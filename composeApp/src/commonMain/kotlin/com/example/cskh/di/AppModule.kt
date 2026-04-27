@@ -27,6 +27,7 @@ import com.example.cskh.domain.usecase.GetNotificationsUseCase
 import com.example.cskh.domain.usecase.LoginUseCase
 import com.example.cskh.domain.usecase.MarkNotificationsReadUseCase
 import com.example.cskh.domain.usecase.RegisterFcmDeviceUseCase
+import com.example.cskh.domain.usecase.UnregisterFcmDeviceUseCase
 import com.example.cskh.domain.usecase.UserFormPreferencesUseCase
 import com.example.cskh.platform.BinaryGetDownloader
 import com.example.cskh.platform.InvoiceZipSaver
@@ -43,6 +44,7 @@ import com.example.cskh.presentation.NotificationBadgeStore
 import com.example.cskh.presentation.screens.notifications.NotificationListViewModel
 import com.example.cskh.presentation.screens.phananh.PhanAnhListViewModel
 import com.example.cskh.presentation.screens.phananh.PhanAnhViewModel
+import com.example.cskh.platform.FcmDeviceSync
 import com.russhwolf.settings.Settings
 import io.ktor.client.HttpClient
 import org.koin.core.module.dsl.viewModel
@@ -70,16 +72,17 @@ val appModule = module {
     single<NotificationRepository> { NotificationRepositoryImpl(get(), get()) }
     single<FeedbackRepository> { FeedbackRepositoryImpl(get(), get()) }
     single { RegisterFcmDeviceUseCase(get(), get()) }
+    single { UnregisterFcmDeviceUseCase(get(), get()) }
     single { GetNotificationsUseCase(get()) }
     single { MarkNotificationsReadUseCase(get()) }
     single { NotificationBadgeStore(get(), get()) }
     single { CreateFeedbackUseCase(get(), get()) }
     single { GetFeedbacksUseCase(get(), get()) }
     viewModel { LoginViewModel(get(), get(), get(), get()) }
-    viewModel { HomeViewModel(get(), get(), get(), get(), get(), get()) }
+    viewModel { HomeViewModel(get(), get(), get(), get(), get(), get(), get()) }
     viewModel { InvoiceListViewModel(get(), get()) }
     viewModel { NotificationListViewModel(get(), get(), get(), get()) }
-    viewModel { CustomerProfileViewModel(get(), get(), get(), get()) }
+    viewModel { CustomerProfileViewModel(get(), get(), get(), get(), get()) }
     viewModel { PhanAnhViewModel(get()) }
     viewModel { PhanAnhListViewModel(get()) }
     viewModel { (id: Long) -> InvoiceDetailViewModel(get(), get(), get(), id) }

@@ -6,6 +6,7 @@ import com.example.cskh.data.session.SessionManager
 import com.example.cskh.domain.model.CustomerProfile
 import com.example.cskh.domain.usecase.GetCustomerMeUseCase
 import com.example.cskh.domain.usecase.UserFormPreferencesUseCase
+import com.example.cskh.platform.FcmDeviceSync
 import com.example.cskh.presentation.NotificationBadgeStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +25,7 @@ class CustomerProfileViewModel(
     private val formPreferences: UserFormPreferencesUseCase,
     private val sessionManager: SessionManager,
     private val notificationBadgeStore: NotificationBadgeStore,
+    private val fcmDeviceSync: FcmDeviceSync,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CustomerProfileUiState())
@@ -34,9 +36,12 @@ class CustomerProfileViewModel(
     }
 
     fun logout() {
-        notificationBadgeStore.clear()
-        formPreferences.clearAccessToken()
-        sessionManager.clear()
+        viewModelScope.launch {
+            runCatching { fcmDeviceSync.unregisterIfLoggedIn() }
+            notificationBadgeStore.clear()
+            formPreferences.clearAccessToken()
+            sessionManager.clear()
+        }
     }
 
     fun refresh() {

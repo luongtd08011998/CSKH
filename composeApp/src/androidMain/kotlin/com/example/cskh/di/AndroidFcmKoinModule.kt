@@ -6,6 +6,6 @@ import org.koin.dsl.module
 
 val androidFcmKoinModule = module {
     single<FcmDeviceSync> {
-        FcmDeviceSyncAndroid(get(), get(), get())
+        FcmDeviceSyncAndroid(get(), get(), get(), get())
     }
 }

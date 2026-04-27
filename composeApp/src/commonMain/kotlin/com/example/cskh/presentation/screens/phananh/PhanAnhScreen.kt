@@ -23,7 +23,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.WarningAmber
@@ -39,12 +38,14 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -86,10 +87,10 @@ private val issueTypes = listOf(
 @Composable
 fun PhanAnhScreen(
     onBack: () -> Unit,
-    onNavigateHistory: () -> Unit,
     viewModel: PhanAnhViewModel = koinViewModel(),
 ) {
     val vmState by viewModel.state.collectAsState()
+    var selectedTabIndex by remember { mutableIntStateOf(0) }
     var selectedIssue by remember { mutableStateOf<String?>(null) }
     var address by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
@@ -114,110 +115,141 @@ fun PhanAnhScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại")
                     }
                 },
-                actions = {
-                    TextButton(onClick = onNavigateHistory) {
-                        Icon(Icons.Filled.History, contentDescription = null, modifier = Modifier.size(18.dp), tint = Color(0xFF2563EB))
-                        Spacer(Modifier.size(6.dp))
-                        Text(
-                            text = "Lịch sử",
-                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
-                            color = Color(0xFF2563EB)
-                        )
-                    }
-                },
             )
         },
         containerColor = Color.Transparent,
     ) { padding ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(pageBg)
                 .padding(padding),
         ) {
-            val tracking = vmState.submittedTrackingCode ?: submittedCode
-            if (tracking != null) {
-                SuccessState(
-                    code = tracking,
-                    onNew = {
-                        selectedIssue = null
-                        address = ""
-                        description = ""
-                        photos = emptyList()
-                        submittedCode = null
-                        viewModel.resetSubmitted()
-                    },
-                )
-            } else {
-                FormState(
-                    selectedIssue = selectedIssue,
-                    onSelectIssue = { selectedIssue = it },
-                    address = address,
-                    onAddressChange = { address = it },
-                    description = description,
-                    onDescriptionChange = { description = it },
-                    photos = photos,
-                    onPickPhotos = {
-                        showPhotoSheet = true
-                    },
-                    onRemovePhoto = { uri ->
-                        photos = photos.filterNot { it.uri == uri }
-                    },
-                    isSubmitting = vmState.isSubmitting,
-                    errorMessage = vmState.errorMessage,
-                    onDismissError = { viewModel.clearError() },
-                    onSubmit = {
-                        val issue = selectedIssue ?: return@FormState
-                        viewModel.submit(
-                            issueType = issue,
-                            location = address,
-                            description = description,
-                            images = photos,
+            // Tab bar
+            PrimaryTabRow(
+                selectedTabIndex = selectedTabIndex,
+                containerColor = Color.White,
+                contentColor = Color(0xFF2563EB),
+            ) {
+                Tab(
+                    selected = selectedTabIndex == 0,
+                    onClick = { selectedTabIndex = 0 },
+                    text = {
+                        Text(
+                            "Gửi phản ánh",
+                            fontWeight = if (selectedTabIndex == 0) FontWeight.Bold else FontWeight.Normal,
                         )
                     },
+                    selectedContentColor = Color(0xFF2563EB),
+                    unselectedContentColor = Color(0xFF64748B),
+                )
+                Tab(
+                    selected = selectedTabIndex == 1,
+                    onClick = { selectedTabIndex = 1 },
+                    text = {
+                        Text(
+                            "Lịch sử",
+                            fontWeight = if (selectedTabIndex == 1) FontWeight.Bold else FontWeight.Normal,
+                        )
+                    },
+                    selectedContentColor = Color(0xFF2563EB),
+                    unselectedContentColor = Color(0xFF64748B),
                 )
             }
 
-            if (showPhotoSheet) {
-                ModalBottomSheet(
-                    onDismissRequest = { showPhotoSheet = false },
-                    containerColor = Color.White,
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .padding(bottom = 24.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp),
+            // Tab content
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(pageBg),
+            ) {
+                if (selectedTabIndex == 0) {
+                    val tracking = vmState.submittedTrackingCode ?: submittedCode
+                    if (tracking != null) {
+                        SuccessState(
+                            code = tracking,
+                            onNew = {
+                                selectedIssue = null
+                                address = ""
+                                description = ""
+                                photos = emptyList()
+                                submittedCode = null
+                                viewModel.resetSubmitted()
+                            },
+                        )
+                    } else {
+                        FormState(
+                            selectedIssue = selectedIssue,
+                            onSelectIssue = { selectedIssue = it },
+                            address = address,
+                            onAddressChange = { address = it },
+                            description = description,
+                            onDescriptionChange = { description = it },
+                            photos = photos,
+                            onPickPhotos = {
+                                showPhotoSheet = true
+                            },
+                            onRemovePhoto = { uri ->
+                                photos = photos.filterNot { it.uri == uri }
+                            },
+                            isSubmitting = vmState.isSubmitting,
+                            errorMessage = vmState.errorMessage,
+                            onDismissError = { viewModel.clearError() },
+                            onSubmit = {
+                                val issue = selectedIssue ?: return@FormState
+                                viewModel.submit(
+                                    issueType = issue,
+                                    location = address,
+                                    description = description,
+                                    images = photos,
+                                )
+                            },
+                        )
+                    }
+                } else {
+                    FeedbackHistoryTab()
+                }
+
+                if (showPhotoSheet) {
+                    ModalBottomSheet(
+                        onDismissRequest = { showPhotoSheet = false },
+                        containerColor = Color.White,
                     ) {
-                        Text(
-                            text = "Hình ảnh minh họa",
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                            color = Color(0xFF0F172A),
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        SheetAction(
-                            title = "Chọn ảnh",
-                            subtitle = "Tối đa 5 ảnh",
-                            onClick = {
-                                showPhotoSheet = false
-                                imagePicker.pickImages(max = 5)
-                            },
-                        )
-                        SheetAction(
-                            title = "Chụp ảnh",
-                            subtitle = "Mở camera",
-                            onClick = {
-                                showPhotoSheet = false
-                                imagePicker.takePhoto()
-                            },
-                        )
-                        SheetAction(
-                            title = "Hủy",
-                            subtitle = "",
-                            onClick = { showPhotoSheet = false },
-                            isDestructive = true,
-                        )
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 16.dp)
+                                .padding(bottom = 24.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            Text(
+                                text = "Hình ảnh minh họa",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                                color = Color(0xFF0F172A),
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            SheetAction(
+                                title = "Chọn ảnh",
+                                subtitle = "Tối đa 5 ảnh",
+                                onClick = {
+                                    showPhotoSheet = false
+                                    imagePicker.pickImages(max = 5)
+                                },
+                            )
+                            SheetAction(
+                                title = "Chụp ảnh",
+                                subtitle = "Mở camera",
+                                onClick = {
+                                    showPhotoSheet = false
+                                    imagePicker.takePhoto()
+                                },
+                            )
+                            SheetAction(
+                                title = "Hủy",
+                                subtitle = "",
+                                onClick = { showPhotoSheet = false },
+                                isDestructive = true,
+                            )
+                        }
                     }
                 }
             }

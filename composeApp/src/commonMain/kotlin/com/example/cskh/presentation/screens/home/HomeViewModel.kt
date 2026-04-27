@@ -10,6 +10,7 @@ import com.example.cskh.domain.usecase.GetCustomerMeUseCase
 import com.example.cskh.domain.usecase.GetInvoiceDetailUseCase
 import com.example.cskh.domain.usecase.GetInvoicesUseCase
 import com.example.cskh.domain.usecase.UserFormPreferencesUseCase
+import com.example.cskh.platform.FcmDeviceSync
 import com.example.cskh.presentation.NotificationBadgeStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -32,6 +33,7 @@ class HomeViewModel(
     private val getInvoices: GetInvoicesUseCase,
     private val getInvoiceDetail: GetInvoiceDetailUseCase,
     private val notificationBadgeStore: NotificationBadgeStore,
+    private val fcmDeviceSync: FcmDeviceSync,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(HomeUiState())
@@ -42,9 +44,12 @@ class HomeViewModel(
     }
 
     fun logout() {
-        notificationBadgeStore.clear()
-        formPreferences.clearAccessToken()
-        sessionManager.clear()
+        viewModelScope.launch {
+            runCatching { fcmDeviceSync.unregisterIfLoggedIn() }
+            notificationBadgeStore.clear()
+            formPreferences.clearAccessToken()
+            sessionManager.clear()
+        }
     }
 
     fun refresh() {

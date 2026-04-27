@@ -6,9 +6,11 @@ package com.example.cskh.platform
 interface FcmDeviceSync {
     suspend fun registerIfLoggedIn()
     suspend fun registerWithFcmToken(fcmToken: String)
+    suspend fun unregisterIfLoggedIn()
 }
 
 object FcmDeviceSyncNoop : FcmDeviceSync {
     override suspend fun registerIfLoggedIn() {}
     override suspend fun registerWithFcmToken(fcmToken: String) {}
+    override suspend fun unregisterIfLoggedIn() {}
 }

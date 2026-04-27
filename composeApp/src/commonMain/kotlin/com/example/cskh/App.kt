@@ -43,15 +43,16 @@ import com.example.cskh.presentation.screens.invoices.InvoiceDetailScreen
 import com.example.cskh.presentation.screens.invoices.InvoiceListScreen
 import com.example.cskh.presentation.screens.login.LoginScreen
 import com.example.cskh.presentation.screens.notifications.NotificationListScreen
-import com.example.cskh.presentation.screens.phananh.PhanAnhListScreen
+import com.example.cskh.presentation.screens.article.ArticleDetailScreen
 import com.example.cskh.presentation.screens.phananh.PhanAnhScreen
 import com.example.cskh.presentation.screens.static.AboutScreen
 import com.example.cskh.presentation.screens.static.WaterPriceScreen
 import com.example.cskh.presentation.theme.CskhTheme
+import com.example.cskh.platform.NotificationPermissionGate
 import org.koin.compose.koinInject
 
 @Composable
-fun App() {
+fun App(pendingArticleTitle: String? = null, pendingArticleContent: String? = null) {
     setSingletonImageLoaderFactory { context ->
         ImageLoader.Builder(context)
             .components {
@@ -62,14 +63,18 @@ fun App() {
     CskhKoinHost {
         CskhTheme {
             Surface(modifier = Modifier.fillMaxSize()) {
-                MainNavHost()
+                NotificationPermissionGate()
+                MainNavHost(pendingArticleTitle = pendingArticleTitle, pendingArticleContent = pendingArticleContent)
             }
         }
     }
 }
 
 @Composable
-private fun MainNavHost() {
+private fun MainNavHost(
+    pendingArticleTitle: String? = null,
+    pendingArticleContent: String? = null,
+) {
     val sessionManager = koinInject<SessionManager>()
     val notificationBadgeStore = koinInject<NotificationBadgeStore>()
     val unreadNotificationCount by notificationBadgeStore.unreadCount.collectAsState()
@@ -92,6 +97,14 @@ private fun MainNavHost() {
             notificationBadgeStore.refreshFromNetwork()
         } else {
             notificationBadgeStore.clear()
+        }
+    }
+
+    LaunchedEffect(pendingArticleTitle, pendingArticleContent) {
+        if (pendingArticleTitle != null && pendingArticleContent != null) {
+            navController.navigate(
+                Screen.ArticleDetail(title = pendingArticleTitle, content = pendingArticleContent)
+            )
         }
     }
 
@@ -175,7 +188,12 @@ private fun MainNavHost() {
                     )
                 }
                 composable<Screen.Notifications> {
-                    NotificationListScreen(onBack = { navController.popBackStack() })
+                    NotificationListScreen(
+                        onBack = { navController.popBackStack() },
+                        onNavigateArticle = { title, content ->
+                            navController.navigate(Screen.ArticleDetail(title, content))
+                        },
+                    )
                 }
                 composable<Screen.CustomerProfile> {
                     CustomerProfileScreen(
@@ -196,11 +214,15 @@ private fun MainNavHost() {
                 composable<Screen.PhanAnh> {
                     PhanAnhScreen(
                         onBack = { navController.popBackStack() },
-                        onNavigateHistory = { navController.navigate(Screen.PhanAnhList) }
                     )
                 }
-                composable<Screen.PhanAnhList> {
-                    PhanAnhListScreen(onBack = { navController.popBackStack() })
+                composable<Screen.ArticleDetail> { entry ->
+                    val route: Screen.ArticleDetail = entry.toRoute()
+                    ArticleDetailScreen(
+                        title = route.title,
+                        content = route.content,
+                        onBack = { navController.popBackStack() },
+                    )
                 }
             }
         }

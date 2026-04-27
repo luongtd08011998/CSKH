@@ -31,5 +31,5 @@ sealed interface Screen {
     data object PhanAnh : Screen
 
     @Serializable
-    data object PhanAnhList : Screen
+    data class ArticleDetail(val title: String, val content: String) : Screen
 }

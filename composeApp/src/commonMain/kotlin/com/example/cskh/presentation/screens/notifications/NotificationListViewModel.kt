@@ -65,19 +65,47 @@ class NotificationListViewModel(
     }
 
     fun markAllRead() {
-        markReadInternal(ids = null)
+        val baseUrl = formPreferences.getBaseUrl()
+        if (baseUrl.isBlank()) {
+            _state.update { it.copy(errorMessage = "Thiếu địa chỉ API. Vui lòng đăng nhập lại.") }
+            return
+        }
+        _state.update { st ->
+            st.copy(items = st.items.map { it.copy(isRead = true) })
+        }
+        notificationBadgeStore.syncFromItems(_state.value.items)
+        _state.update { it.copy(isMarkingRead = true, errorMessage = null) }
+        viewModelScope.launch {
+            val resultFalse = markRead.markRead(baseUrl, ids = null, isSystem = false)
+            val resultTrue = markRead.markRead(baseUrl, ids = null, isSystem = true)
+            val failures = listOfNotNull(
+                resultFalse.exceptionOrNull()?.message,
+                resultTrue.exceptionOrNull()?.message,
+            )
+            if (failures.isNotEmpty()) {
+                _state.update {
+                    it.copy(
+                        isMarkingRead = false,
+                        errorMessage = failures.joinToString("; "),
+                    )
+                }
+            } else {
+                _state.update { it.copy(isMarkingRead = false) }
+            }
+        }
     }
 
     fun markRead(id: Long) {
         if (id <= 0) return
+        val item = _state.value.items.find { it.id == id }
         _state.update { st ->
             st.copy(items = st.items.map { if (it.id == id) it.copy(isRead = true) else it })
         }
         notificationBadgeStore.syncFromItems(_state.value.items)
-        markReadInternal(ids = listOf(id))
+        markReadInternal(ids = listOf(id), isSystem = item?.isSystem)
     }
 
-    private fun markReadInternal(ids: List<Long>?) {
+    private fun markReadInternal(ids: List<Long>?, isSystem: Boolean? = null) {
         val baseUrl = formPreferences.getBaseUrl()
         if (baseUrl.isBlank()) {
             _state.update { it.copy(errorMessage = "Thiếu địa chỉ API. Vui lòng đăng nhập lại.") }
@@ -85,7 +113,7 @@ class NotificationListViewModel(
         }
         viewModelScope.launch {
             _state.update { it.copy(isMarkingRead = true, errorMessage = null) }
-            val result = markRead.markRead(baseUrl, ids)
+            val result = markRead.markRead(baseUrl, ids, isSystem)
             result.fold(
                 onSuccess = {
                     if (ids == null) {

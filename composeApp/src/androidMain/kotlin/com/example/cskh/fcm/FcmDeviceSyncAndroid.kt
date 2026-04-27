@@ -2,6 +2,7 @@ package com.example.cskh.fcm
 
 import com.example.cskh.data.session.SessionManager
 import com.example.cskh.domain.usecase.RegisterFcmDeviceUseCase
+import com.example.cskh.domain.usecase.UnregisterFcmDeviceUseCase
 import com.example.cskh.domain.usecase.UserFormPreferencesUseCase
 import com.example.cskh.platform.FcmDeviceSync
 import com.example.cskh.platform.defaultDevMachineApiBaseUrl
@@ -15,6 +16,7 @@ import kotlin.coroutines.resumeWithException
 
 class FcmDeviceSyncAndroid(
     private val registerFcmDevice: RegisterFcmDeviceUseCase,
+    private val unregisterFcmDevice: UnregisterFcmDeviceUseCase,
     private val sessionManager: SessionManager,
     private val formPreferences: UserFormPreferencesUseCase,
 ) : FcmDeviceSync {
@@ -29,6 +31,7 @@ class FcmDeviceSyncAndroid(
         if (sessionManager.accessToken.isNullOrBlank()) return@withContext
         val fcm = runCatching { fetchFcmToken() }.getOrNull() ?: return@withContext
         registerWithFcmToken(fcm)
+        runCatching { subscribeGeneralNewsTopic() }.getOrNull()
     }
 
     override suspend fun registerWithFcmToken(fcmToken: String) {
@@ -40,12 +43,31 @@ class FcmDeviceSyncAndroid(
         }
     }
 
+    override suspend fun unregisterIfLoggedIn(): Unit = withContext(Dispatchers.IO) {
+        if (sessionManager.accessToken.isNullOrBlank()) return@withContext
+        val fcm = runCatching { fetchFcmToken() }.getOrNull() ?: return@withContext
+        if (fcm.isBlank()) return@withContext
+        val base = resolveBaseUrl()
+        runCatching { unregisterFcmDevice.unregister(base, fcm) }
+    }
+
     private suspend fun fetchFcmToken(): String = suspendCancellableCoroutine { cont ->
         FirebaseMessaging.getInstance().token
             .addOnSuccessListener { cont.resume(it) }
             .addOnFailureListener { e ->
                 if (cont.isCancelled) return@addOnFailureListener
                 cont.resumeWithException(e)
+            }
+    }
+
+    private suspend fun subscribeGeneralNewsTopic() = suspendCancellableCoroutine { cont ->
+        FirebaseMessaging.getInstance().subscribeToTopic("general_news")
+            .addOnCompleteListener { task ->
+                if (task.isSuccessful) {
+                    cont.resume(Unit)
+                } else {
+                    cont.resumeWithException(task.exception ?: Exception("Subscribe topic failed"))
+                }
             }
     }
 }

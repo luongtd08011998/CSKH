@@ -11,6 +11,7 @@ import androidx.core.app.NotificationManagerCompat
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import com.example.cskh.R
+import com.example.cskh.MainActivity
 import com.example.cskh.platform.FcmDeviceSync
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -37,6 +38,19 @@ class CskhFirebaseMessagingService : FirebaseMessagingService() {
         val title = message.notification?.title ?: message.data["title"] ?: getString(R.string.app_name)
         val body = message.notification?.body ?: message.data["body"] ?: ""
         val url = message.data["URL"]?.trim().orEmpty()
+        val type = message.data["type"]?.trim().orEmpty()
+        val referenceId = message.data["referenceId"]?.trim().orEmpty()
+
+        if (type.equals("ARTICLE", ignoreCase = true) && referenceId.isNotBlank()) {
+            showArticleNotification(
+                title = title,
+                body = body,
+                articleTitle = message.data["articleTitle"] ?: title,
+                articleContent = message.data["articleContent"] ?: body,
+            )
+            return
+        }
+
         if (body.isBlank() && url.isBlank()) return
 
         showNotification(title = title, body = body, url = url)
@@ -69,6 +83,37 @@ class CskhFirebaseMessagingService : FirebaseMessagingService() {
             .build()
 
         NotificationManagerCompat.from(this).notify((body + url).hashCode(), notification)
+    }
+
+    private fun showArticleNotification(
+        title: String,
+        body: String,
+        articleTitle: String,
+        articleContent: String,
+    ) {
+        val channelId = "ARTICLE_NEWS"
+        ensureChannel(channelId, name = "Bài viết nổi bật")
+
+        val intent = Intent(this, MainActivity::class.java).apply {
+            putExtra("article_title", articleTitle)
+            putExtra("article_content", articleContent)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        }
+        val flags = (PendingIntent.FLAG_UPDATE_CURRENT or
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
+        val contentIntent = PendingIntent.getActivity(this, articleTitle.hashCode(), intent, flags)
+
+        val notification = NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(contentIntent)
+            .build()
+
+        NotificationManagerCompat.from(this).notify(articleTitle.hashCode(), notification)
     }
 
     private fun ensureChannel(channelId: String, name: String) {

@@ -10,6 +10,7 @@ class UserPreferences(private val settings: Settings) : UserFormStore {
     override fun loadBaseUrl(): String = settings.getString(KEY_BASE, "")
 
     override fun loadAccessToken(): String = settings.getString(KEY_ACCESS, "")
+    override fun loadNotificationPermissionPrompted(): Boolean = settings.getBoolean(KEY_NOTIF_PROMPTED, false)
 
     override fun save(digiCode: String, phone: String, baseUrl: String) {
         settings.putString(KEY_DIGI, digiCode)
@@ -21,6 +22,10 @@ class UserPreferences(private val settings: Settings) : UserFormStore {
         settings.putString(KEY_ACCESS, token)
     }
 
+    override fun saveNotificationPermissionPrompted(value: Boolean) {
+        settings.putBoolean(KEY_NOTIF_PROMPTED, value)
+    }
+
     override fun clearAccessToken() {
         settings.putString(KEY_ACCESS, "")
     }
@@ -30,5 +35,6 @@ class UserPreferences(private val settings: Settings) : UserFormStore {
         private const val KEY_PHONE = "pref_phone"
         private const val KEY_BASE = "pref_base_url"
         private const val KEY_ACCESS = "pref_access_token"
+        private const val KEY_NOTIF_PROMPTED = "pref_notification_permission_prompted"
     }
 }
