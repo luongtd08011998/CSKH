@@ -1,6 +1,7 @@
 package com.example.cskh.data.repository
 
 import com.example.cskh.data.remote.dto.FeedbackCreateResponseDto
+import com.example.cskh.data.remote.dto.FeedbackDetailResponseDto
 import com.example.cskh.data.remote.dto.FeedbackListResponseDto
 import com.example.cskh.data.remote.dto.toDomain
 import com.example.cskh.data.session.SessionManager
@@ -119,6 +120,20 @@ class FeedbackRepositoryImpl(
         }
         val envelope = response.body<FeedbackListResponseDto>()
         (envelope.data ?: emptyList()).map { it.toDomain() }
+    }
+
+    override suspend fun getFeedbackDetail(baseUrl: String, id: Long): Result<com.example.cskh.domain.model.FeedbackDetail> = runCatching {
+        val token = sessionManager.accessToken ?: error("Chưa đăng nhập")
+        val url = "${normalizeApiBaseUrl(baseUrl)}/api/v1/qlkh/customer/feedbacks/$id"
+        val response = client.get(url) {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }
+        if (response.status.value !in 200..299) {
+            val text = runCatching { response.bodyAsText() }.getOrNull()
+            error(text ?: "HTTP ${response.status.value}")
+        }
+        val envelope = response.body<FeedbackDetailResponseDto>()
+        envelope.data?.toDomain() ?: error(envelope.message ?: "Không nhận được dữ liệu")
     }
 }
 

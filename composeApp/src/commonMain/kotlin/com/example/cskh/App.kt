@@ -44,6 +44,7 @@ import com.example.cskh.presentation.screens.invoices.InvoiceListScreen
 import com.example.cskh.presentation.screens.login.LoginScreen
 import com.example.cskh.presentation.screens.notifications.NotificationListScreen
 import com.example.cskh.presentation.screens.article.ArticleDetailScreen
+import com.example.cskh.presentation.screens.phananh.PhanAnhDetailScreen
 import com.example.cskh.presentation.screens.phananh.PhanAnhScreen
 import com.example.cskh.presentation.screens.static.AboutScreen
 import com.example.cskh.presentation.screens.static.WaterPriceScreen
@@ -213,6 +214,16 @@ private fun MainNavHost(
                 }
                 composable<Screen.PhanAnh> {
                     PhanAnhScreen(
+                        onBack = { navController.popBackStack() },
+                        onNavigateDetail = { id ->
+                            navController.navigate(Screen.PhanAnhDetail(id))
+                        },
+                    )
+                }
+                composable<Screen.PhanAnhDetail> { entry ->
+                    val route: Screen.PhanAnhDetail = entry.toRoute()
+                    PhanAnhDetailScreen(
+                        feedbackId = route.id,
                         onBack = { navController.popBackStack() },
                     )
                 }

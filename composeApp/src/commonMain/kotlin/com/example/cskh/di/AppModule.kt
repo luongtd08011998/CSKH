@@ -20,6 +20,7 @@ import com.example.cskh.domain.repository.NotificationRepository
 import com.example.cskh.domain.usecase.DownloadAndSaveEInvoiceZipUseCase
 import com.example.cskh.domain.usecase.CreateFeedbackUseCase
 import com.example.cskh.domain.usecase.GetCustomerMeUseCase
+import com.example.cskh.domain.usecase.GetFeedbackDetailUseCase
 import com.example.cskh.domain.usecase.GetFeedbacksUseCase
 import com.example.cskh.domain.usecase.GetInvoiceDetailUseCase
 import com.example.cskh.domain.usecase.GetInvoicesUseCase
@@ -42,6 +43,7 @@ import com.example.cskh.presentation.screens.invoices.InvoiceListViewModel
 import com.example.cskh.presentation.screens.login.LoginViewModel
 import com.example.cskh.presentation.NotificationBadgeStore
 import com.example.cskh.presentation.screens.notifications.NotificationListViewModel
+import com.example.cskh.presentation.screens.phananh.PhanAnhDetailViewModel
 import com.example.cskh.presentation.screens.phananh.PhanAnhListViewModel
 import com.example.cskh.presentation.screens.phananh.PhanAnhViewModel
 import com.example.cskh.platform.FcmDeviceSync
@@ -78,6 +80,7 @@ val appModule = module {
     single { NotificationBadgeStore(get(), get()) }
     single { CreateFeedbackUseCase(get(), get()) }
     single { GetFeedbacksUseCase(get(), get()) }
+    single { GetFeedbackDetailUseCase(get(), get()) }
     viewModel { LoginViewModel(get(), get(), get(), get()) }
     viewModel { HomeViewModel(get(), get(), get(), get(), get(), get(), get()) }
     viewModel { InvoiceListViewModel(get(), get()) }
@@ -85,5 +88,6 @@ val appModule = module {
     viewModel { CustomerProfileViewModel(get(), get(), get(), get(), get()) }
     viewModel { PhanAnhViewModel(get()) }
     viewModel { PhanAnhListViewModel(get()) }
+    viewModel { (id: Long) -> PhanAnhDetailViewModel(get(), id) }
     viewModel { (id: Long) -> InvoiceDetailViewModel(get(), get(), get(), id) }
 }

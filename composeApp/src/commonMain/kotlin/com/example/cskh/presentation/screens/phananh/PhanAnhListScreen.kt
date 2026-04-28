@@ -1,6 +1,7 @@
 package com.example.cskh.presentation.screens.phananh
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -50,6 +51,7 @@ private val pageBgList = Brush.verticalGradient(listOf(Color(0xFFEFF6FF), Color(
 @Composable
 internal fun FeedbackHistoryTab(
     modifier: Modifier = Modifier,
+    onItemClick: (Long) -> Unit = {},
     viewModel: PhanAnhListViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -140,7 +142,10 @@ internal fun FeedbackHistoryTab(
                 ) {
                     item { Spacer(Modifier.height(4.dp)) }
                     items(state.feedbacks, key = { it.id }) { feedback ->
-                        FeedbackListItem(feedback = feedback)
+                        FeedbackListItem(
+                            feedback = feedback,
+                            onClick = { onItemClick(feedback.id) },
+                        )
                     }
                     item { Spacer(Modifier.height(8.dp)) }
                 }
@@ -150,11 +155,16 @@ internal fun FeedbackHistoryTab(
 }
 
 @Composable
-private fun FeedbackListItem(feedback: FeedbackItem) {
+private fun FeedbackListItem(
+    feedback: FeedbackItem,
+    onClick: () -> Unit = {},
+) {
     val statusConfig = feedbackStatusConfig(feedback.status)
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
@@ -252,7 +262,7 @@ private fun FeedbackListItem(feedback: FeedbackItem) {
 }
 
 @Composable
-private fun StatusBadge(config: StatusConfig) {
+internal fun StatusBadge(config: StatusConfig) {
     Surface(
         shape = RoundedCornerShape(20.dp),
         color = config.bg,
@@ -277,7 +287,7 @@ private fun StatusBadge(config: StatusConfig) {
     }
 }
 
-private data class StatusConfig(
+internal data class StatusConfig(
     val label: String,
     val bg: Color,
     val textColor: Color,
@@ -285,7 +295,7 @@ private data class StatusConfig(
     val iconTint: Color,
 )
 
-private fun feedbackStatusConfig(status: String): StatusConfig = when (status.uppercase()) {
+internal fun feedbackStatusConfig(status: String): StatusConfig = when (status.uppercase()) {
     "PENDING" -> StatusConfig(
         label = "Chờ xử lý",
         bg = Color(0xFFFFF3CD),
@@ -333,7 +343,7 @@ private fun issueTypeEmoji(issueType: String): String = when (issueType.uppercas
     else -> "📝"
 }
 
-private fun issueTypeLabel(issueType: String): String = when (issueType.uppercase()) {
+internal fun issueTypeLabel(issueType: String): String = when (issueType.uppercase()) {
     "LEAK" -> "Rò rỉ nước"
     "QUALITY" -> "Chất lượng nước"
     "PRESSURE" -> "Áp lực nước yếu"
@@ -343,7 +353,7 @@ private fun issueTypeLabel(issueType: String): String = when (issueType.uppercas
     else -> "Khác"
 }
 
-private fun formatFeedbackDate(createdAt: String): String {
+internal fun formatFeedbackDate(createdAt: String): String {
     // Parse ISO-8601 "2026-04-24T16:10:00.12345" -> "24/04/2026"
     return try {
         val datePart = createdAt.substringBefore('T')

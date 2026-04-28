@@ -87,6 +87,7 @@ private val issueTypes = listOf(
 @Composable
 fun PhanAnhScreen(
     onBack: () -> Unit,
+    onNavigateDetail: (Long) -> Unit = {},
     viewModel: PhanAnhViewModel = koinViewModel(),
 ) {
     val vmState by viewModel.state.collectAsState()
@@ -206,7 +207,7 @@ fun PhanAnhScreen(
                         )
                     }
                 } else {
-                    FeedbackHistoryTab()
+                    FeedbackHistoryTab(onItemClick = onNavigateDetail)
                 }
 
                 if (showPhotoSheet) {
