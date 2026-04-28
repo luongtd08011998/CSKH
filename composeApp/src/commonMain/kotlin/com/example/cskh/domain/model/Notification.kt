@@ -10,5 +10,6 @@ data class NotificationItem(
     val createdAt: String,
     val referenceId: Long? = null,
     val isSystem: Boolean = false,
+    val url: String? = null,
 )
 

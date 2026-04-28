@@ -7,6 +7,7 @@ import com.example.cskh.data.repository.CustomerRepositoryImpl
 import com.example.cskh.data.repository.DeviceRepositoryImpl
 import com.example.cskh.data.repository.FeedbackRepositoryImpl
 import com.example.cskh.data.repository.InvoiceRepositoryImpl
+import com.example.cskh.data.repository.MaintenanceArticleRepositoryImpl
 import com.example.cskh.data.repository.NotificationRepositoryImpl
 import com.example.cskh.data.session.SessionManager
 import com.example.cskh.data.settings.UserPreferences
@@ -17,6 +18,7 @@ import com.example.cskh.domain.repository.DeviceRepository
 import com.example.cskh.domain.repository.FeedbackRepository
 import com.example.cskh.domain.repository.InvoiceRepository
 import com.example.cskh.domain.repository.NotificationRepository
+import com.example.cskh.domain.repository.MaintenanceArticleRepository
 import com.example.cskh.domain.usecase.DownloadAndSaveEInvoiceZipUseCase
 import com.example.cskh.domain.usecase.CreateFeedbackUseCase
 import com.example.cskh.domain.usecase.GetCustomerMeUseCase
@@ -24,6 +26,7 @@ import com.example.cskh.domain.usecase.GetFeedbackDetailUseCase
 import com.example.cskh.domain.usecase.GetFeedbacksUseCase
 import com.example.cskh.domain.usecase.GetInvoiceDetailUseCase
 import com.example.cskh.domain.usecase.GetInvoicesUseCase
+import com.example.cskh.domain.usecase.GetMaintenanceArticlesUseCase
 import com.example.cskh.domain.usecase.GetNotificationsUseCase
 import com.example.cskh.domain.usecase.LoginUseCase
 import com.example.cskh.domain.usecase.MarkNotificationsReadUseCase
@@ -76,6 +79,8 @@ val appModule = module {
     single { RegisterFcmDeviceUseCase(get(), get()) }
     single { UnregisterFcmDeviceUseCase(get(), get()) }
     single { GetNotificationsUseCase(get()) }
+    single<MaintenanceArticleRepository> { MaintenanceArticleRepositoryImpl(get()) }
+    single { GetMaintenanceArticlesUseCase(get()) }
     single { MarkNotificationsReadUseCase(get()) }
     single { NotificationBadgeStore(get(), get()) }
     single { CreateFeedbackUseCase(get(), get()) }
@@ -84,7 +89,7 @@ val appModule = module {
     viewModel { LoginViewModel(get(), get(), get(), get()) }
     viewModel { HomeViewModel(get(), get(), get(), get(), get(), get(), get()) }
     viewModel { InvoiceListViewModel(get(), get()) }
-    viewModel { NotificationListViewModel(get(), get(), get(), get()) }
+    viewModel { NotificationListViewModel(get(), get(), get(), get(), get()) }
     viewModel { CustomerProfileViewModel(get(), get(), get(), get(), get()) }
     viewModel { PhanAnhViewModel(get()) }
     viewModel { PhanAnhListViewModel(get()) }

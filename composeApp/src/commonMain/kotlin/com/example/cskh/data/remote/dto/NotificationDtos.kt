@@ -14,6 +14,7 @@ data class NotificationDto(
     val createdAt: String? = null,
     val referenceId: Long? = null,
     val isSystem: Boolean? = null,
+    val url: String? = null,
 )
 
 @Serializable
@@ -39,5 +40,6 @@ fun NotificationDto.toDomain(): NotificationItem = NotificationItem(
     createdAt = createdAt.orEmpty(),
     referenceId = referenceId,
     isSystem = isSystem ?: false,
+    url = url,
 )
 
