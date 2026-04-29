@@ -1,7 +1,7 @@
 package com.example.cskh.presentation.screens.notifications
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,15 +18,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil3.compose.AsyncImage
 import com.example.cskh.domain.model.MaintenanceArticle
 import com.example.cskh.domain.model.NotificationItem
+import com.example.cskh.platform.HtmlContentView
 import org.koin.compose.viewmodel.koinViewModel
 
 enum class NotificationType {
@@ -76,6 +75,7 @@ fun NotificationListScreen(
 ) {
     val state by viewModel.state.collectAsState()
     val maintenanceState by viewModel.maintenanceState.collectAsState()
+    val featuredState by viewModel.featuredState.collectAsState()
     val uriHandler = LocalUriHandler.current
     val openUrl: (String) -> Unit = remember {
         { url -> uriHandler.openUri(url) }
@@ -93,7 +93,7 @@ fun NotificationListScreen(
     val filteredNotifications = when (selectedTab) {
         0 -> notifications.filter { it.type.toNotificationType() == NotificationType.BILLING }
         1 -> emptyList() // Tab Cúp nước dùng API riêng
-        2 -> notifications.filter { it.type.toNotificationType() == NotificationType.GENERAL }
+        2 -> emptyList() // Tab Nổi bật dùng API riêng
         else -> notifications
     }
 
@@ -127,8 +127,11 @@ fun NotificationListScreen(
                 },
                 actions = {
                     IconButton(onClick = {
-                        if (selectedTab == 1) viewModel.refreshMaintenance()
-                        else viewModel.refresh()
+                        when (selectedTab) {
+                            1 -> viewModel.refreshMaintenance()
+                            2 -> viewModel.refreshFeatured()
+                            else -> viewModel.refresh()
+                        }
                     }) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
@@ -136,7 +139,7 @@ fun NotificationListScreen(
                             tint = Color.White,
                         )
                     }
-                    if (selectedTab != 1) {
+                    if (selectedTab != 1 && selectedTab != 2) {
                         IconButton(
                             onClick = { viewModel.markAllRead() },
                             enabled = unreadCount > 0 && !state.isMarkingRead,
@@ -193,6 +196,12 @@ fun NotificationListScreen(
                     maintenanceState = maintenanceState,
                     onLoadMore = { viewModel.loadMoreMaintenance() },
                     onRetry = { viewModel.refreshMaintenance() },
+                    onArticleClick = openUrl,
+                )
+                2 -> FeaturedTabContent(
+                    featuredState = featuredState,
+                    onLoadMore = { viewModel.loadMoreFeatured() },
+                    onRetry = { viewModel.refreshFeatured() },
                     onArticleClick = openUrl,
                 )
                 else -> {
@@ -296,8 +305,8 @@ fun NotificationListScreen(
                 }
             }
 
-            // Tabs luôn hiển thị ở trên cùng (dùng cho tab Cúp nước)
-            if (selectedTab == 1) {
+            // Tabs luôn hiển thị ở trên cùng (dùng cho tab Cúp nước và Nổi bật)
+            if (selectedTab == 1 || selectedTab == 2) {
                 Card(
                     modifier = Modifier
                         .align(Alignment.TopCenter),
@@ -399,7 +408,7 @@ private fun MaintenanceTabContent(
                     items(articles, key = { it.id }) { article ->
                         MaintenanceCard(
                             article = article,
-                            onClick = { onArticleClick("https://capnuoctoctien.vn/news/${article.slug}") }
+                            onClick = { onArticleClick("https://beta.toctienltd.vn/news/${article.slug}") }
                         )
                     }
 
@@ -433,6 +442,103 @@ private fun MaintenanceTabContent(
 }
 
 @Composable
+private fun FeaturedTabContent(
+    featuredState: FeaturedUiState,
+    onLoadMore: () -> Unit,
+    onRetry: () -> Unit,
+    onArticleClick: (String) -> Unit,
+) {
+    val articles = featuredState.items
+    val meta = featuredState.meta
+
+    Column(modifier = Modifier.fillMaxSize().padding(top = 72.dp)) {
+        if (featuredState.isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else if (featuredState.errorMessage != null && articles.isEmpty()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(vertical = 80.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Info,
+                    contentDescription = null,
+                    tint = Color.LightGray,
+                    modifier = Modifier.size(80.dp)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = featuredState.errorMessage,
+                    fontSize = 14.sp,
+                    color = Color.Gray
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+                Button(onClick = onRetry) {
+                    Text(text = "Thử lại")
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                if (articles.isEmpty()) {
+                    item {
+                        EmptyView("Không có bài viết nổi bật")
+                    }
+                } else {
+                    items(articles, key = { it.id }) { article ->
+                        MaintenanceCard(
+                            article = article,
+                            onClick = { onArticleClick("https://beta.toctienltd.vn/news/${article.slug}") }
+                        )
+                    }
+
+                    if (meta != null && featuredState.currentPage < meta.pages - 1 && !featuredState.isLoadingMore) {
+                        item {
+                            OutlinedButton(
+                                onClick = onLoadMore,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(text = "Tải thêm")
+                            }
+                        }
+                    }
+
+                    if (featuredState.isLoadingMore) {
+                        item {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+private fun stripHtmlTags(html: String): String {
+    return html
+        .replace(Regex("<[^>]*>"), "")
+        .replace("&nbsp;", " ")
+        .replace("&amp;", "&")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&quot;", "\"")
+        .replace("&#39;", "'")
+        .replace("\\s+".toRegex(), " ")
+        .trim()
+}
+
+@Composable
 fun MaintenanceCard(
     article: MaintenanceArticle,
     onClick: () -> Unit,
@@ -440,129 +546,68 @@ fun MaintenanceCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
-            .border(2.dp, Color(0xFFEF5350), RoundedCornerShape(16.dp)),
+            .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFFFF3E0)
+            containerColor = Color.White
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        border = BorderStroke(1.dp, Color(0xFFE0E0E0))
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
-            // Thumbnail
-            if (!article.thumbnail.isNullOrBlank()) {
-                AsyncImage(
-                    model = article.thumbnail,
-                    contentDescription = article.title,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(160.dp)
-                        .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
-                    contentScale = ContentScale.Crop
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Schedule,
+                    contentDescription = null,
+                    tint = Color(0xFF9E9E9E),
+                    modifier = Modifier.size(14.dp)
+                )
+                Text(
+                    text = article.createdAt,
+                    fontSize = 13.sp,
+                    color = Color(0xFF9E9E9E)
                 )
             }
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // Icon
-                Box(
-                    modifier = Modifier
-                        .size(50.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFFEF5350)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.WaterDrop,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(26.dp)
-                    )
-                }
+            Spacer(modifier = Modifier.height(8.dp))
 
-                // Nội dung
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(
-                        text = article.title,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
-                        color = Color.Black,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = article.content.take(120) + if (article.content.length > 120) "..." else "",
-                        fontSize = 13.sp,
-                        color = Color.DarkGray,
-                        lineHeight = 18.sp,
-                        maxLines = 3,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Schedule,
-                                contentDescription = null,
-                                tint = Color.Gray,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Text(
-                                text = article.createdAt,
-                                fontSize = 12.sp,
-                                color = Color.Gray
-                            )
-                        }
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Visibility,
-                                contentDescription = null,
-                                tint = Color.Gray,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Text(
-                                text = "${article.views}",
-                                fontSize = 12.sp,
-                                color = Color.Gray
-                            )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    TextButton(
-                        onClick = onClick,
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = Color(0xFF1976D2)
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Launch,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "Xem chi tiết",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
+            Text(
+                text = article.title,
+                fontSize = 14.sp,
+                color = Color(0xFF9E9E9E),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            HtmlContentView(
+                html = article.content,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
+                onClick = onClick,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF2563EB),
+                    contentColor = Color.White
+                ),
+                shape = RoundedCornerShape(8.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
+            ) {
+                Text(
+                    text = "Xem chi tiết",
+                    fontSize = 14.sp
+                )
             }
         }
     }
@@ -574,117 +619,93 @@ fun NotificationCard(
     onClick: () -> Unit,
     onViewDetail: () -> Unit = {},
 ) {
-    val notificationType = notification.type.toNotificationType()
-    val isMaintenance = notificationType == NotificationType.MAINTENANCE
+    val plainContent = remember(notification.content) { stripHtmlTags(notification.content) }
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onClick() }
-            .then(
-                if (isMaintenance) {
-                    Modifier.border(2.dp, Color(0xFFEF5350), RoundedCornerShape(16.dp))
-                } else Modifier
-            ),
+            .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isMaintenance) {
-                Color(0xFFFFF3E0)  // Cam nhạt cho cúp nước
-            } else {
-                notificationType.getBackgroundColor()
-            }
+            containerColor = Color.White
         ),
         elevation = CardDefaults.cardElevation(
-            defaultElevation = if (!notification.isRead) 4.dp else 2.dp
-        )
+            defaultElevation = if (!notification.isRead) 3.dp else 2.dp
+        ),
+        border = BorderStroke(1.dp, Color(0xFFE0E0E0))
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(16.dp)
         ) {
-            // Icon
-            Box(
-                modifier = Modifier
-                    .size(50.dp)
-                    .clip(CircleShape)
-                    .background(notificationType.getColor()),
-                contentAlignment = Alignment.Center
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Icon(
-                    imageVector = notificationType.getIcon(),
+                    imageVector = Icons.Default.Schedule,
                     contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(26.dp)
+                    tint = Color(0xFF9E9E9E),
+                    modifier = Modifier.size(14.dp)
                 )
+                Text(
+                    text = notification.createdAt,
+                    fontSize = 13.sp,
+                    color = Color(0xFF9E9E9E)
+                )
+                if (!notification.isRead) {
+                    Box(
+                        modifier = Modifier
+                            .padding(start = 4.dp)
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(Color(0xFF2563EB))
+                    )
+                }
             }
 
-            // Nội dung
-            Column(
-                modifier = Modifier.weight(1f)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = notification.title.ifBlank { "Thông báo" },
+                fontSize = 14.sp,
+                color = Color(0xFF9E9E9E),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(modifier = Modifier.height(6.dp))
+
+            Text(
+                text = plainContent,
+                fontSize = 15.sp,
+                color = Color(0xFF212121),
+                lineHeight = 22.sp,
+                maxLines = 4,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Button(
+                onClick = {
+                    if (!notification.url.isNullOrBlank()) {
+                        onViewDetail()
+                    } else {
+                        onClick()
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF2563EB),
+                    contentColor = Color.White
+                ),
+                shape = RoundedCornerShape(8.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
             ) {
                 Text(
-                    text = notification.title.ifBlank { "Thông báo" },
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp,
-                    color = if (notification.isRead) Color.Gray else Color.Black
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = notification.content,
-                    fontSize = 14.sp,
-                    color = Color.DarkGray,
-                    lineHeight = 20.sp
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Schedule,
-                        contentDescription = null,
-                        tint = Color.Gray,
-                        modifier = Modifier.size(14.dp)
-                    )
-                    Text(
-                        text = notification.createdAt,
-                        fontSize = 12.sp,
-                        color = Color.Gray
-                    )
-                }
-
-                if (notification.url != null) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    TextButton(
-                        onClick = onViewDetail,
-                        colors = ButtonDefaults.textButtonColors(
-                            contentColor = Color(0xFF1976D2)
-                        )
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Launch,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = "Xem chi tiết",
-                            fontSize = 13.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
-            }
-
-            // Chấm xanh nếu chưa đọc
-            if (!notification.isRead) {
-                Box(
-                    modifier = Modifier
-                        .size(12.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF2196F3))
+                    text = "Xem chi tiết",
+                    fontSize = 14.sp
                 )
             }
         }
