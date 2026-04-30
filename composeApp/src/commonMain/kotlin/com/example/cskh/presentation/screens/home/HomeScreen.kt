@@ -34,7 +34,7 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.foundation.Image
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -53,6 +53,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -67,6 +69,9 @@ import com.example.cskh.presentation.CompanyBranding
 import org.koin.compose.viewmodel.koinViewModel
 import androidx.compose.ui.platform.UriHandler
 import com.example.cskh.util.formatVnd
+import org.jetbrains.compose.resources.painterResource
+import cskh.composeapp.generated.resources.Res
+import cskh.composeapp.generated.resources.logocty1
 
 private val pageBackground = Color(0xFFF5F7FA)
 private val bannerBlue = Color(0xFF1976D2)
@@ -237,18 +242,20 @@ private fun HomeHero(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         Surface(
-                            modifier = Modifier.size(48.dp),
+                            modifier = Modifier.size(54.dp),
                             shape = CircleShape,
                             color = Color.White,
+                            shadowElevation = 6.dp,
                         ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    imageVector = Icons.Filled.WaterDrop,
-                                    contentDescription = null,
-                                    tint = Color(0xFF1565C0),
-                                    modifier = Modifier.size(26.dp),
-                                )
-                            }
+                            Image(
+                                painter = painterResource(Res.drawable.logocty1),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(2.dp)
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop,
+                            )
                         }
                         Column {
                             Text(
@@ -427,12 +434,7 @@ private fun CurrentInvoiceCard(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        Icon(
-                            imageVector = Icons.Filled.WaterDrop,
-                            contentDescription = null,
-                            tint = Color(0xFF1565C0),
-                            modifier = Modifier.size(20.dp),
-                        )
+
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = "Lượng nước tiêu thụ",
@@ -677,18 +679,20 @@ private fun CompanyInfoCard(
                 verticalAlignment = Alignment.Top,
             ) {
                 Surface(
-                    modifier = Modifier.size(56.dp),
-                    shape = RoundedCornerShape(14.dp),
-                    color = bannerBlue,
+                    modifier = Modifier.size(60.dp),
+                    shape = CircleShape,
+                    color = Color.White,
+                    shadowElevation = 6.dp,
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Filled.WaterDrop,
-                            contentDescription = null,
-                            modifier = Modifier.size(32.dp),
-                            tint = Color.White,
-                        )
-                    }
+                    Image(
+                        painter = painterResource(Res.drawable.logocty1),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(2.dp)
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop,
+                    )
                 }
                 Column(
                     modifier = Modifier.weight(1f),

@@ -24,7 +24,7 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Phone
-import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.foundation.Image
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -41,6 +41,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -50,6 +53,9 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.painterResource
+import cskh.composeapp.generated.resources.Res
+import cskh.composeapp.generated.resources.logocty1
 
 private const val CompanyName = "Công ty TNHH cấp nước Tóc Tiên"
 private const val CompanyAddress = "Ấp 6, Xã Châu Pha, Thành phố Hồ Chí Minh, Việt Nam."
@@ -116,19 +122,20 @@ fun AboutScreen(onBack: () -> Unit) {
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Surface(
-                            modifier = Modifier.size(52.dp),
+                            modifier = Modifier.size(56.dp),
                             shape = CircleShape,
-                            color = Color.White.copy(alpha = 0.18f),
-                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)),
+                            color = Color.White,
+                            shadowElevation = 6.dp,
                         ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Icon(
-                                    Icons.Filled.WaterDrop,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(28.dp),
-                                )
-                            }
+                            Image(
+                                painter = painterResource(Res.drawable.logocty1),
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(2.dp)
+                                    .clip(CircleShape),
+                                contentScale = ContentScale.Crop,
+                            )
                         }
                         Column(modifier = Modifier.weight(1f)) {
                             Text(

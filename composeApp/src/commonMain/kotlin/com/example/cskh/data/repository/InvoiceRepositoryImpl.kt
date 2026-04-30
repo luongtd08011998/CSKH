@@ -37,7 +37,7 @@ class InvoiceRepositoryImpl(
                 error(text ?: "HTTP ${response.status.value}")
             }
             val envelope = response.body<InvoicesListResponseDto>()
-            val data = envelope.data ?: error(envelope.message ?: "Không có dữ liệu")
+            val data = envelope.data ?: return@runCatching PagedInvoices(com.example.cskh.domain.model.PageMeta(1, 20, 1, 0), emptyList())
             data.toDomain()
         }
 

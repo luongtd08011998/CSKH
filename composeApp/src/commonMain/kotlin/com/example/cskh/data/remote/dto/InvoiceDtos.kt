@@ -8,24 +8,25 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class InvoicesPageDataDto(
-    val meta: MetaDto,
-    val result: List<InvoiceListItemDto>,
+    val meta: MetaDto? = null,
+    val result: List<InvoiceListItemDto>? = null,
+    val items: List<InvoiceListItemDto>? = null,
 )
 
 @Serializable
 data class MetaDto(
-    val page: Int,
-    val pageSize: Int,
-    val pages: Int,
-    val total: Int,
+    val page: Int? = null,
+    val pageSize: Int? = null,
+    val pages: Int? = null,
+    val total: Int? = null,
 )
 
 @Serializable
 data class InvoiceListItemDto(
-    val id: Long,
-    val digiCode: String,
-    val customerName: String,
-    val amount: Double,
+    val id: Long? = null,
+    val digiCode: String? = null,
+    val customerName: String? = null,
+    val amount: Double? = null,
     val envFee: Double? = null,
     val taxFee: Double? = null,
     val totalAmount: Double? = null,
@@ -59,16 +60,21 @@ data class InvoiceDetailDto(
     val numOfHouseHold: Int? = null,
 )
 
-fun MetaDto.toDomain(): PageMeta = PageMeta(page, pageSize, pages, total)
+fun MetaDto.toDomain(): PageMeta = PageMeta(
+    page = page ?: 1,
+    pageSize = pageSize ?: 20,
+    pages = pages ?: 1,
+    total = total ?: 0
+)
 
 fun InvoiceListItemDto.toDomain(): InvoiceSummary = InvoiceSummary(
-    id = id,
-    digiCode = digiCode,
-    customerName = customerName,
-    amount = amount,
+    id = id ?: 0L,
+    digiCode = digiCode.orEmpty(),
+    customerName = customerName.orEmpty(),
+    amount = amount ?: 0.0,
     envFee = envFee ?: 0.0,
     taxFee = taxFee ?: 0.0,
-    totalAmount = totalAmount ?: (amount + (envFee ?: 0.0) + (taxFee ?: 0.0)),
+    totalAmount = totalAmount ?: ((amount ?: 0.0) + (envFee ?: 0.0) + (taxFee ?: 0.0)),
     paymentStatus = paymentStatus ?: 0,
     paymentStatusLabel = paymentStatusLabel.orEmpty(),
     oldVal = oldVal ?: 0,
@@ -105,8 +111,8 @@ fun InvoiceDetailDto.toDomain(): InvoiceDetail {
 }
 
 fun InvoicesPageDataDto.toDomain(): PagedInvoices = PagedInvoices(
-    meta = meta.toDomain(),
-    items = result.map { it.toDomain() },
+    meta = meta?.toDomain() ?: PageMeta(1, 20, 1, 0),
+    items = (result ?: items)?.map { it.toDomain() } ?: emptyList(),
 )
 
 @Serializable

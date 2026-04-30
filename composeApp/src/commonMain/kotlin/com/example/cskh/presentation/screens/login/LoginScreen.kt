@@ -33,7 +33,7 @@ import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
-import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.foundation.Image
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
@@ -58,6 +58,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
@@ -69,6 +71,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.cskh.presentation.CompanyBranding
 import org.koin.compose.viewmodel.koinViewModel
+import org.jetbrains.compose.resources.painterResource
+import cskh.composeapp.generated.resources.Res
+import cskh.composeapp.generated.resources.logocty1
 
 private val bgGradientTop = Color(0xFFE3F2FD)
 private val bgGradientMid = Color(0xFFFFFFFF)
@@ -159,34 +164,16 @@ fun LoginScreen(
                 modifier = Modifier.size(96.dp),
                 contentAlignment = Alignment.Center,
             ) {
-                Box(
+                Image(
+                    painter = painterResource(Res.drawable.logocty1),
+                    contentDescription = null,
                     modifier = Modifier
-                        .fillMaxSize()
-                        .rotate(6f)
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(logoPlateBrush),
-                )
-                Box(
-                    modifier = Modifier
-                        .size(96.dp)
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(logoGradient),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.WaterDrop,
-                        contentDescription = null,
-                        modifier = Modifier.size(48.dp),
-                        tint = Color.White,
-                    )
-                }
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .offset(x = 4.dp, y = (-4).dp)
-                        .size(22.dp)
-                        .clip(CircleShape)
-                        .background(Color(0xFF64B5F6).copy(alpha = pulseAlpha)),
+                        .size(86.dp)
+                        .shadow(elevation = 8.dp, shape = CircleShape)
+                        .background(Color.White, shape = CircleShape)
+                        .padding(3.dp)
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop
                 )
             }
 

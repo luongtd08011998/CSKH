@@ -21,7 +21,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AttachMoney
-import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.foundation.Image
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -36,11 +36,17 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import org.jetbrains.compose.resources.painterResource
+import cskh.composeapp.generated.resources.Res
+import cskh.composeapp.generated.resources.logocty1
 
 private val pageBgTop = Color(0xFFFAFAFA)
 private val pageBgBottom = Color(0xFFF0F0F0)
@@ -161,19 +167,20 @@ private fun HeaderWaterPrice() {
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Surface(
-                    modifier = Modifier.size(52.dp),
+                    modifier = Modifier.size(56.dp),
                     shape = CircleShape,
-                    color = Color.White.copy(alpha = 0.18f),
-                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)),
+                    color = Color.White,
+                    shadowElevation = 6.dp,
                 ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            Icons.Filled.WaterDrop,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(28.dp),
-                        )
-                    }
+                    Image(
+                        painter = painterResource(Res.drawable.logocty1),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(2.dp)
+                            .clip(CircleShape),
+                        contentScale = ContentScale.Crop,
+                    )
                 }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
