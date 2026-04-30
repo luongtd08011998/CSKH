@@ -145,44 +145,30 @@ fun NotificationListScreen(
                             tint = Color.White,
                         )
                     }
-                    if (selectedTab != 1 && selectedTab != 2) {
-                        IconButton(
-                            onClick = { viewModel.markAllRead() },
-                            enabled = unreadCount > 0 && !state.isMarkingRead,
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.DoneAll,
-                                contentDescription = "Đánh dấu tất cả đã đọc",
-                                tint = if (unreadCount > 0) Color.White else Color.White.copy(alpha = 0.5f),
-                            )
-                        }
-                    }
-                    Box(modifier = Modifier.padding(end = 12.dp)) {
+                    OutlinedButton(
+                        onClick = { viewModel.markAllRead() },
+                        enabled = unreadCount > 0 && !state.isMarkingRead,
+                        border = BorderStroke(1.dp, if (unreadCount > 0) Color.White.copy(alpha = 0.7f) else Color.White.copy(alpha = 0.3f)),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color.White,
+                            disabledContentColor = Color.White.copy(alpha = 0.5f)
+                        ),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 0.dp),
+                        modifier = Modifier.height(32.dp),
+                        shape = RoundedCornerShape(50)
+                    ) {
                         Icon(
-                            imageVector = Icons.Default.Notifications,
-                            contentDescription = "Bell",
-                            tint = Color.White,
-                            modifier = Modifier.size(28.dp)
+                            imageVector = Icons.Default.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp).padding(end = 4.dp)
                         )
-                        if (unreadCount > 0) {
-                            Box(
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .offset(x = 4.dp, y = (-4).dp)
-                                    .size(18.dp)
-                                    .clip(CircleShape)
-                                    .background(Color.Red),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "$unreadCount",
-                                    color = Color.White,
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                        }
+                        Text(
+                            text = "Đã đọc hết",
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.Medium
+                        )
                     }
+
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color(0xFF1976D2),
@@ -216,10 +202,7 @@ fun NotificationListScreen(
                     ) {
                         tabs.forEachIndexed { index, (title, type) ->
                             val isSelected = selectedTab == index
-                            val tabCount = when (index) {
-                                1 -> 0 // Tab Cúp nước không có unread count
-                                else -> notifications.count { it.type.toNotificationType() == type && !it.isRead }
-                            }
+                            val tabCount = notifications.count { it.type.toNotificationType() == type && !it.isRead }
                             Tab(
                                 selected = isSelected,
                                 onClick = { selectedTab = index },
