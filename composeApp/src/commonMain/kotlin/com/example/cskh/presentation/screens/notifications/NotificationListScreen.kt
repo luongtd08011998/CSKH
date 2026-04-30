@@ -578,8 +578,7 @@ fun MaintenanceCard(
 
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
+            .fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.White
@@ -666,8 +665,7 @@ fun NotificationCard(
 
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onClick() },
+            .fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.White
