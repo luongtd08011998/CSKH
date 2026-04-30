@@ -19,10 +19,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import com.example.cskh.domain.model.MaintenanceArticle
 import com.example.cskh.domain.model.NotificationItem
 import com.example.cskh.platform.HtmlContentView
@@ -82,6 +87,7 @@ fun NotificationListScreen(
     }
 
     var selectedTab by remember { mutableStateOf(0) }
+    var searchQuery by remember { mutableStateOf("") }
 
     val tabs = listOf(
         "Hóa đơn" to NotificationType.BILLING,
@@ -185,89 +191,100 @@ fun NotificationListScreen(
             )
         }
     ) { paddingValues ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .background(Color(0xFFF5F5F5))
         ) {
-            when (selectedTab) {
-                1 -> MaintenanceTabContent(
-                    maintenanceState = maintenanceState,
-                    onLoadMore = { viewModel.loadMoreMaintenance() },
-                    onRetry = { viewModel.refreshMaintenance() },
-                    onArticleClick = openUrl,
-                )
-                2 -> FeaturedTabContent(
-                    featuredState = featuredState,
-                    onLoadMore = { viewModel.loadMoreFeatured() },
-                    onRetry = { viewModel.refreshFeatured() },
-                    onArticleClick = openUrl,
-                )
-                else -> {
-                    Column(modifier = Modifier.fillMaxSize()) {
-                        // Tabs
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(0.dp),
-                            colors = CardDefaults.cardColors(containerColor = Color.White)
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                tabs.forEachIndexed { index, (title, type) ->
-                                    val isSelected = selectedTab == index
-                                    val tabCount = when (index) {
-                                        1 -> 0 // Tab Cúp nước không có unread count
-                                        else -> notifications.count { it.type.toNotificationType() == type && !it.isRead }
-                                    }
-
-                                    Button(
-                                        onClick = { selectedTab = index },
-                                        modifier = Modifier.weight(1f),
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = if (isSelected) type.getColor() else Color(0xFFE0E0E0),
-                                            contentColor = if (isSelected) Color.White else Color.Gray
-                                        ),
-                                        shape = RoundedCornerShape(12.dp),
-                                        contentPadding = PaddingValues(vertical = 12.dp)
-                                    ) {
-                                        Column(
-                                            horizontalAlignment = Alignment.CenterHorizontally
-                                        ) {
-                                            BadgedBox(
-                                                badge = {
-                                                    if (tabCount > 0) {
-                                                        Badge(
-                                                            containerColor = if (isSelected) Color.White.copy(alpha = 0.9f) else Color.Red,
-                                                            contentColor = if (isSelected) type.getColor() else Color.White
-                                                        ) {
-                                                            Text(text = "$tabCount")
-                                                        }
-                                                    }
-                                                }
-                                            ) {
-                                                Icon(
-                                                    imageVector = type.getIcon(),
-                                                    contentDescription = null,
-                                                    modifier = Modifier.size(20.dp)
-                                                )
-                                            }
-                                            Spacer(modifier = Modifier.height(4.dp))
-                                            Text(
-                                                text = title,
-                                                fontSize = 12.sp,
-                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                            )
-                                        }
-                                    }
-                                }
+            Surface(
+                color = Color.White,
+                shadowElevation = 2.dp
+            ) {
+                Column {
+                    TabRow(
+                        selectedTabIndex = selectedTab,
+                        containerColor = Color.White,
+                        indicator = { tabPositions ->
+                            if (selectedTab < tabPositions.size) {
+                                TabRowDefaults.Indicator(
+                                    modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
+                                    color = Color(0xFFE53935)
+                                )
                             }
                         }
+                    ) {
+                        tabs.forEachIndexed { index, (title, type) ->
+                            val isSelected = selectedTab == index
+                            val tabCount = when (index) {
+                                1 -> 0 // Tab Cúp nước không có unread count
+                                else -> notifications.count { it.type.toNotificationType() == type && !it.isRead }
+                            }
+                            Tab(
+                                selected = isSelected,
+                                onClick = { selectedTab = index },
+                                text = {
+                                    BadgedBox(
+                                        badge = {
+                                            if (tabCount > 0) {
+                                                Badge(
+                                                    containerColor = Color.Red,
+                                                    contentColor = Color.White
+                                                ) {
+                                                    Text(text = "$tabCount")
+                                                }
+                                            }
+                                        }
+                                    ) {
+                                        Text(
+                                            text = title,
+                                            color = if (isSelected) Color(0xFF1976D2) else Color.DarkGray,
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                            fontSize = 14.sp
+                                        )
+                                    }
+                                }
+                            )
+                        }
+                    }
 
+                    OutlinedTextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        placeholder = { Text("Tìm kiếm", color = Color.Gray) },
+                        leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Black) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        shape = RoundedCornerShape(50),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            focusedBorderColor = Color(0xFFE0E0E0),
+                            unfocusedBorderColor = Color(0xFFE0E0E0)
+                        ),
+                        singleLine = true
+                    )
+                }
+            }
+
+            Box(modifier = Modifier.weight(1f)) {
+                when (selectedTab) {
+                    1 -> MaintenanceTabContent(
+                        maintenanceState = maintenanceState,
+                        searchQuery = searchQuery,
+                        onLoadMore = { viewModel.loadMoreMaintenance() },
+                        onRetry = { viewModel.refreshMaintenance() },
+                        onArticleClick = openUrl,
+                    )
+                    2 -> FeaturedTabContent(
+                        featuredState = featuredState,
+                        searchQuery = searchQuery,
+                        onLoadMore = { viewModel.loadMoreFeatured() },
+                        onRetry = { viewModel.refreshFeatured() },
+                        onArticleClick = openUrl,
+                    )
+                    else -> {
                         if (state.isLoading) {
                             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 CircularProgressIndicator()
@@ -278,12 +295,16 @@ fun NotificationListScreen(
                                 contentPadding = PaddingValues(16.dp),
                                 verticalArrangement = Arrangement.spacedBy(12.dp)
                             ) {
-                                if (filteredNotifications.isEmpty()) {
+                                val finalFilteredNotifications = if (searchQuery.isBlank()) filteredNotifications else {
+                                    filteredNotifications.filter { it.title.contains(searchQuery, ignoreCase = true) }
+                                }
+                                
+                                if (finalFilteredNotifications.isEmpty()) {
                                     item {
                                         EmptyView(state.errorMessage ?: "Không có thông báo")
                                     }
                                 } else {
-                                    items(filteredNotifications, key = { it.id }) { notification ->
+                                    items(finalFilteredNotifications, key = { it.id }) { notification ->
                                         NotificationCard(
                                             notification = notification,
                                             onClick = {
@@ -304,53 +325,6 @@ fun NotificationListScreen(
                     }
                 }
             }
-
-            // Tabs luôn hiển thị ở trên cùng (dùng cho tab Cúp nước và Nổi bật)
-            if (selectedTab == 1 || selectedTab == 2) {
-                Card(
-                    modifier = Modifier
-                        .align(Alignment.TopCenter),
-                    shape = RoundedCornerShape(0.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(8.dp),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        tabs.forEachIndexed { index, (title, type) ->
-                            val isSelected = selectedTab == index
-                            Button(
-                                onClick = { selectedTab = index },
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (isSelected) type.getColor() else Color(0xFFE0E0E0),
-                                    contentColor = if (isSelected) Color.White else Color.Gray
-                                ),
-                                shape = RoundedCornerShape(12.dp),
-                                contentPadding = PaddingValues(vertical = 12.dp)
-                            ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally
-                                ) {
-                                    Icon(
-                                        imageVector = type.getIcon(),
-                                        contentDescription = null,
-                                        modifier = Modifier.size(20.dp)
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = title,
-                                        fontSize = 12.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
         }
     }
 }
@@ -358,14 +332,18 @@ fun NotificationListScreen(
 @Composable
 private fun MaintenanceTabContent(
     maintenanceState: MaintenanceUiState,
+    searchQuery: String,
     onLoadMore: () -> Unit,
     onRetry: () -> Unit,
     onArticleClick: (String) -> Unit,
 ) {
-    val articles = maintenanceState.items
+    val allArticles = maintenanceState.items
+    val articles = if (searchQuery.isBlank()) allArticles else {
+        allArticles.filter { it.title.contains(searchQuery, ignoreCase = true) }
+    }
     val meta = maintenanceState.meta
 
-    Column(modifier = Modifier.fillMaxSize().padding(top = 72.dp)) {
+    Column(modifier = Modifier.fillMaxSize()) {
         if (maintenanceState.isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
@@ -444,14 +422,18 @@ private fun MaintenanceTabContent(
 @Composable
 private fun FeaturedTabContent(
     featuredState: FeaturedUiState,
+    searchQuery: String,
     onLoadMore: () -> Unit,
     onRetry: () -> Unit,
     onArticleClick: (String) -> Unit,
 ) {
-    val articles = featuredState.items
+    val allArticles = featuredState.items
+    val articles = if (searchQuery.isBlank()) allArticles else {
+        allArticles.filter { it.title.contains(searchQuery, ignoreCase = true) }
+    }
     val meta = featuredState.meta
 
-    Column(modifier = Modifier.fillMaxSize().padding(top = 72.dp)) {
+    Column(modifier = Modifier.fillMaxSize()) {
         if (featuredState.isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator()
@@ -526,16 +508,65 @@ private fun FeaturedTabContent(
 }
 
 private fun stripHtmlTags(html: String): String {
-    return html
-        .replace(Regex("<[^>]*>"), "")
-        .replace("&nbsp;", " ")
+    var text = html.replace(Regex("<br\\s*/?>", RegexOption.IGNORE_CASE), "\n")
+    text = text.replace(Regex("</p>", RegexOption.IGNORE_CASE), "\n\n")
+    text = text.replace(Regex("</div>", RegexOption.IGNORE_CASE), "\n")
+    text = text.replace(Regex("<li>", RegexOption.IGNORE_CASE), "\n• ")
+    
+    text = text.replace(Regex("<[^>]*>"), "")
+    
+    text = text.replace("&nbsp;", " ")
         .replace("&amp;", "&")
         .replace("&lt;", "<")
         .replace("&gt;", ">")
         .replace("&quot;", "\"")
         .replace("&#39;", "'")
-        .replace("\\s+".toRegex(), " ")
-        .trim()
+        
+    text = text.replace(Regex("[ \\t]+"), " ")
+    
+    return text.split('\n')
+        .map { it.trim() }
+        .filter { it.isNotEmpty() }
+        .joinToString("\n")
+}
+
+internal fun formatNotificationDate(createdAt: String): String {
+    return try {
+        val dateTimeString = createdAt.replace("T", " ")
+        val parts = dateTimeString.split(" ")
+        if (parts.size >= 2) {
+            val dateParts = parts[0].split("-")
+            val timeParts = parts[1].split(":")
+            if (dateParts.size == 3 && timeParts.size >= 2) {
+                "${dateParts[2]}/${dateParts[1]}/${dateParts[0]} • ${timeParts[0]}:${timeParts[1]}"
+            } else {
+                createdAt
+            }
+        } else {
+            createdAt
+        }
+    } catch (_: Exception) {
+        createdAt
+    }
+}
+
+@Composable
+fun ContactFooter() {
+    Text(
+        text = buildAnnotatedString {
+            append("Phone: ")
+            withStyle(style = SpanStyle(color = Color(0xFF2563EB), textDecoration = TextDecoration.Underline)) {
+                append("02543894894")
+            }
+            append(" | Email: ")
+            withStyle(style = SpanStyle(color = Color(0xFF2563EB), textDecoration = TextDecoration.Underline)) {
+                append("office@toctienltd.vn")
+            }
+        },
+        fontSize = 13.sp,
+        color = Color(0xFF424242),
+        modifier = Modifier.fillMaxWidth()
+    )
 }
 
 @Composable
@@ -543,6 +574,8 @@ fun MaintenanceCard(
     article: MaintenanceArticle,
     onClick: () -> Unit,
 ) {
+    val plainContent = remember(article.content) { stripHtmlTags(article.content) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -566,13 +599,13 @@ fun MaintenanceCard(
                 Icon(
                     imageVector = Icons.Default.Schedule,
                     contentDescription = null,
-                    tint = Color(0xFF9E9E9E),
+                    tint = Color(0xFF64B5F6),
                     modifier = Modifier.size(14.dp)
                 )
                 Text(
-                    text = article.createdAt,
+                    text = formatNotificationDate(article.createdAt),
                     fontSize = 13.sp,
-                    color = Color(0xFF9E9E9E)
+                    color = Color(0xFF64B5F6)
                 )
             }
 
@@ -581,31 +614,41 @@ fun MaintenanceCard(
             Text(
                 text = article.title,
                 fontSize = 14.sp,
-                color = Color(0xFF9E9E9E),
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF212121),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
 
             Spacer(modifier = Modifier.height(6.dp))
 
-            HtmlContentView(
-                html = article.content,
-                modifier = Modifier.fillMaxWidth()
+            Text(
+                text = plainContent,
+                fontSize = 15.sp,
+                color = Color(0xFF212121),
+                lineHeight = 22.sp,
+                maxLines = 4,
+                overflow = TextOverflow.Ellipsis
             )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            ContactFooter()
 
             Spacer(modifier = Modifier.height(12.dp))
 
             Button(
                 onClick = onClick,
+                modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF2563EB),
                     contentColor = Color.White
                 ),
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(50),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
             ) {
                 Text(
-                    text = "Xem chi tiết",
+                    text = "Xem thêm",
                     fontSize = 14.sp
                 )
             }
@@ -646,13 +689,13 @@ fun NotificationCard(
                 Icon(
                     imageVector = Icons.Default.Schedule,
                     contentDescription = null,
-                    tint = Color(0xFF9E9E9E),
+                    tint = Color(0xFF64B5F6),
                     modifier = Modifier.size(14.dp)
                 )
                 Text(
-                    text = notification.createdAt,
+                    text = formatNotificationDate(notification.createdAt),
                     fontSize = 13.sp,
-                    color = Color(0xFF9E9E9E)
+                    color = Color(0xFF64B5F6)
                 )
                 if (!notification.isRead) {
                     Box(
@@ -670,7 +713,8 @@ fun NotificationCard(
             Text(
                 text = notification.title.ifBlank { "Thông báo" },
                 fontSize = 14.sp,
-                color = Color(0xFF9E9E9E),
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF212121),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
@@ -688,6 +732,10 @@ fun NotificationCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
+            ContactFooter()
+
+            Spacer(modifier = Modifier.height(12.dp))
+
             Button(
                 onClick = {
                     if (!notification.url.isNullOrBlank()) {
@@ -696,15 +744,16 @@ fun NotificationCard(
                         onClick()
                     }
                 },
+                modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color(0xFF2563EB),
                     contentColor = Color.White
                 ),
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(50),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
             ) {
                 Text(
-                    text = "Xem chi tiết",
+                    text = "Xem thêm",
                     fontSize = 14.sp
                 )
             }
