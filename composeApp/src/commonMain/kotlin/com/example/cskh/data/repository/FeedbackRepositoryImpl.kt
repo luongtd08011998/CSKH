@@ -100,6 +100,9 @@ class FeedbackRepositoryImpl(
         }
 
         if (response.status.value !in 200..299) {
+            if (response.status.value == 413) {
+                error("Hình ảnh đính kèm có dung lượng quá lớn. Vui lòng chọn hình ảnh có kích thước nhỏ hơn.")
+            }
             val text = runCatching { response.bodyAsText() }.getOrNull()
             error(text ?: "HTTP ${response.status.value}")
         }
