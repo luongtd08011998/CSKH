@@ -2,6 +2,7 @@ package com.example.cskh.presentation.screens.notifications
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.cskh.data.session.TokenRefreshCoordinator
 import com.example.cskh.domain.model.MaintenanceArticle
 import com.example.cskh.domain.model.NotificationItem
 import com.example.cskh.domain.model.PageMeta
@@ -22,6 +23,7 @@ data class NotificationListUiState(
     val isLoading: Boolean = false,
     val isMarkingRead: Boolean = false,
     val errorMessage: String? = null,
+    val sessionExpired: Boolean = false,
 )
 
 data class MaintenanceUiState(
@@ -49,6 +51,7 @@ class NotificationListViewModel(
     private val notificationBadgeStore: NotificationBadgeStore,
     private val getMaintenanceArticles: GetMaintenanceArticlesUseCase,
     private val getFeaturedArticles: GetFeaturedArticlesUseCase,
+    private val tokenRefresh: TokenRefreshCoordinator,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(NotificationListUiState())
@@ -75,6 +78,16 @@ class NotificationListViewModel(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
             val result = getNotifications(baseUrl)
+
+            if (isUnauthorized(result)) {
+                if (!tokenRefresh.tryRefresh()) {
+                    _state.update { it.copy(isLoading = false, sessionExpired = true) }
+                    return@launch
+                }
+                refresh()
+                return@launch
+            }
+
             result.fold(
                 onSuccess = { items ->
                     _state.update { it.copy(items = items, isLoading = false) }
@@ -98,6 +111,16 @@ class NotificationListViewModel(
         viewModelScope.launch {
             _maintenanceState.update { it.copy(isLoading = true, errorMessage = null, currentPage = 0) }
             val result = getMaintenanceArticles(baseUrl, page = 0, size = 10)
+
+            if (isUnauthorized(result)) {
+                if (!tokenRefresh.tryRefresh()) {
+                    _state.update { it.copy(sessionExpired = true) }
+                    return@launch
+                }
+                refreshMaintenance()
+                return@launch
+            }
+
             result.fold(
                 onSuccess = { paged ->
                     _maintenanceState.update {
@@ -124,6 +147,16 @@ class NotificationListViewModel(
         viewModelScope.launch {
             _maintenanceState.update { it.copy(isLoadingMore = true) }
             val result = getMaintenanceArticles(baseUrl, page = nextPage, size = 10)
+
+            if (isUnauthorized(result)) {
+                if (!tokenRefresh.tryRefresh()) {
+                    _state.update { it.copy(sessionExpired = true) }
+                    return@launch
+                }
+                loadMoreMaintenance()
+                return@launch
+            }
+
             result.fold(
                 onSuccess = { paged ->
                     _maintenanceState.update {
@@ -150,6 +183,16 @@ class NotificationListViewModel(
         viewModelScope.launch {
             _featuredState.update { it.copy(isLoading = true, errorMessage = null, currentPage = 0) }
             val result = getFeaturedArticles(baseUrl, page = 0, size = 10)
+
+            if (isUnauthorized(result)) {
+                if (!tokenRefresh.tryRefresh()) {
+                    _state.update { it.copy(sessionExpired = true) }
+                    return@launch
+                }
+                refreshFeatured()
+                return@launch
+            }
+
             result.fold(
                 onSuccess = { paged ->
                     _featuredState.update {
@@ -176,6 +219,16 @@ class NotificationListViewModel(
         viewModelScope.launch {
             _featuredState.update { it.copy(isLoadingMore = true) }
             val result = getFeaturedArticles(baseUrl, page = nextPage, size = 10)
+
+            if (isUnauthorized(result)) {
+                if (!tokenRefresh.tryRefresh()) {
+                    _state.update { it.copy(sessionExpired = true) }
+                    return@launch
+                }
+                loadMoreFeatured()
+                return@launch
+            }
+
             result.fold(
                 onSuccess = { paged ->
                     _featuredState.update {
@@ -202,6 +255,10 @@ class NotificationListViewModel(
         _featuredState.update { it.copy(errorMessage = null) }
     }
 
+    fun acknowledgeSessionExpired() {
+        _state.update { it.copy(sessionExpired = false) }
+    }
+
     fun markAllRead() {
         val baseUrl = formPreferences.getBaseUrl()
         if (baseUrl.isBlank()) {
@@ -216,6 +273,10 @@ class NotificationListViewModel(
         viewModelScope.launch {
             val resultFalse = markRead.markRead(baseUrl, ids = null, isSystem = false)
             val resultTrue = markRead.markRead(baseUrl, ids = null, isSystem = true)
+            
+            // Note: If 401 here, we could also retry, but markAllRead is a fire-and-forget-ish action
+            // for UI. Let's focus on main data loading for now.
+
             val failures = listOfNotNull(
                 resultFalse.exceptionOrNull()?.message,
                 resultTrue.exceptionOrNull()?.message,
@@ -261,6 +322,14 @@ class NotificationListViewModel(
                     notificationBadgeStore.syncFromItems(_state.value.items)
                 },
                 onFailure = { e ->
+                    if (isUnauthorized(result)) {
+                        if (!tokenRefresh.tryRefresh()) {
+                            _state.update { it.copy(isMarkingRead = false, sessionExpired = true) }
+                            return@launch
+                        }
+                        markReadInternal(ids, isSystem)
+                        return@launch
+                    }
                     _state.update {
                         it.copy(
                             isMarkingRead = false,
@@ -271,4 +340,9 @@ class NotificationListViewModel(
             )
         }
     }
+
+    private fun isUnauthorized(result: Result<*>): Boolean =
+        result.exceptionOrNull()?.message?.let {
+            it.contains("401") || it.contains("UNAUTHORIZED_401") || it.contains("Chưa đăng nhập")
+        } == true
 }

@@ -47,6 +47,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -108,6 +109,26 @@ fun HomeScreen(
     viewModel: HomeViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
+
+    // Khi refresh token hết hạn → hiển thị thông báo
+    if (state.sessionExpired) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { },
+            title = { Text("Phiên đăng nhập hết hạn") },
+            text = { Text("Phiên làm việc của bạn đã hết hạn. Vui lòng đăng nhập lại để tiếp tục sử dụng.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.acknowledgeSessionExpired()
+                        onLogout()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1565C0))
+                ) {
+                    Text("OK", color = Color.White)
+                }
+            }
+        )
+    }
 
     val menu = listOf(
         HomeServiceCard(

@@ -2,11 +2,12 @@ package com.example.cskh.presentation.screens.customer
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.cskh.data.session.SessionManager
+import com.example.cskh.data.session.TokenRefreshCoordinator
 import com.example.cskh.domain.model.CustomerProfile
 import com.example.cskh.domain.usecase.GetCustomerMeUseCase
 import com.example.cskh.domain.usecase.UserFormPreferencesUseCase
-import com.example.cskh.platform.FcmDeviceSync
+import com.example.cskh.platform.defaultDevMachineApiBaseUrl
+import com.example.cskh.presentation.CompanyBranding
 import com.example.cskh.presentation.NotificationBadgeStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,14 +19,15 @@ data class CustomerProfileUiState(
     val profile: CustomerProfile? = null,
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
+    /** true khi refresh token hết hạn → caller điều hướng về màn hình Login */
+    val sessionExpired: Boolean = false,
 )
 
 class CustomerProfileViewModel(
     private val getCustomerMe: GetCustomerMeUseCase,
     private val formPreferences: UserFormPreferencesUseCase,
-    private val sessionManager: SessionManager,
+    private val tokenRefresh: TokenRefreshCoordinator,
     private val notificationBadgeStore: NotificationBadgeStore,
-    private val fcmDeviceSync: FcmDeviceSync,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(CustomerProfileUiState())
@@ -35,12 +37,12 @@ class CustomerProfileViewModel(
         refresh()
     }
 
-    fun logout() {
+    fun logout(onLoggedOut: () -> Unit) {
+        val baseUrl = defaultDevMachineApiBaseUrl(CompanyBranding.DEV_API_PORT)
         viewModelScope.launch {
-            runCatching { fcmDeviceSync.unregisterIfLoggedIn() }
             notificationBadgeStore.clear()
-            formPreferences.clearAccessToken()
-            sessionManager.clear()
+            tokenRefresh.logout(baseUrl)
+            onLoggedOut()
         }
     }
 
@@ -52,7 +54,18 @@ class CustomerProfileViewModel(
         }
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
-            getCustomerMe(baseUrl).fold(
+            val result = getCustomerMe(baseUrl)
+
+            if (isUnauthorized(result)) {
+                if (!tokenRefresh.tryRefresh()) {
+                    _state.update { it.copy(isLoading = false, sessionExpired = true) }
+                    return@launch
+                }
+                refresh()
+                return@launch
+            }
+
+            result.fold(
                 onSuccess = { profile ->
                     _state.update { it.copy(profile = profile, isLoading = false) }
                 },
@@ -71,4 +84,12 @@ class CustomerProfileViewModel(
     fun clearError() {
         _state.update { it.copy(errorMessage = null) }
     }
+
+    fun acknowledgeSessionExpired() {
+        _state.update { it.copy(sessionExpired = false) }
+    }
+
+    private fun isUnauthorized(result: Result<*>): Boolean =
+        result.exceptionOrNull()?.message?.contains("401") == true ||
+            result.exceptionOrNull()?.message?.contains("Chưa đăng nhập") == true
 }

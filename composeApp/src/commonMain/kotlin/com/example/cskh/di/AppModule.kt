@@ -6,6 +6,7 @@ import com.example.cskh.data.repository.AuthRepositoryImpl
 import com.example.cskh.data.repository.CustomerRepositoryImpl
 import com.example.cskh.data.repository.DeviceRepositoryImpl
 import com.example.cskh.data.repository.FeedbackRepositoryImpl
+import com.example.cskh.data.session.TokenRefreshCoordinator
 import com.example.cskh.data.repository.InvoiceRepositoryImpl
 import com.example.cskh.data.repository.MaintenanceArticleRepositoryImpl
 import com.example.cskh.data.repository.FeaturedArticleRepositoryImpl
@@ -32,7 +33,9 @@ import com.example.cskh.domain.usecase.GetMaintenanceArticlesUseCase
 import com.example.cskh.domain.usecase.GetFeaturedArticlesUseCase
 import com.example.cskh.domain.usecase.GetNotificationsUseCase
 import com.example.cskh.domain.usecase.LoginUseCase
+import com.example.cskh.domain.usecase.LogoutUseCase
 import com.example.cskh.domain.usecase.MarkNotificationsReadUseCase
+import com.example.cskh.domain.usecase.RefreshTokenUseCase
 import com.example.cskh.domain.usecase.RegisterFcmDeviceUseCase
 import com.example.cskh.domain.usecase.UnregisterFcmDeviceUseCase
 import com.example.cskh.domain.usecase.UserFormPreferencesUseCase
@@ -64,16 +67,29 @@ val appModule = module {
     single<BinaryGetDownloader> { createBinaryGetDownloader() }
     single<Settings> { Settings() }
     single<UserFormStore> { UserPreferences(get()) }
-    single { SessionManager().apply { setToken(get<UserFormStore>().loadAccessToken().takeIf { it.isNotBlank() }) } }
+
+    // SessionManager – khởi tạo cả accessToken lẫn refreshToken từ storage
+    single {
+        val store = get<UserFormStore>()
+        SessionManager().apply {
+            val access = store.loadAccessToken().takeIf { it.isNotBlank() }
+            val refresh = store.loadRefreshToken().takeIf { it.isNotBlank() }
+            setToken(access, refresh)
+        }
+    }
+
     single { UserFormPreferencesUseCase(get()) }
+    single { TokenRefreshCoordinator(get(), get(), get(), get(), get()) }
     single { LoginUseCase(get()) }
+    single { RefreshTokenUseCase(get()) }
+    single { LogoutUseCase(get()) }
     single { GetInvoicesUseCase(get()) }
     single { GetInvoiceDetailUseCase(get()) }
     single<InvoiceZipSaver> { InvoiceZipSaverImpl() }
     single<QrPngSaver> { QrPngSaverImpl() }
     single { DownloadAndSaveEInvoiceZipUseCase(get(), get()) }
     single { GetCustomerMeUseCase(get()) }
-    single<AuthRepository> { AuthRepositoryImpl(get()) }
+    single<AuthRepository> { AuthRepositoryImpl(get(), get()) }
     single<InvoiceRepository> { InvoiceRepositoryImpl(get(), get(), get()) }
     single<CustomerRepository> { CustomerRepositoryImpl(get(), get()) }
     single<DeviceRepository> { DeviceRepositoryImpl(get()) }
@@ -92,12 +108,12 @@ val appModule = module {
     single { GetFeedbacksUseCase(get(), get()) }
     single { GetFeedbackDetailUseCase(get(), get()) }
     viewModel { LoginViewModel(get(), get(), get(), get()) }
-    viewModel { HomeViewModel(get(), get(), get(), get(), get(), get(), get()) }
-    viewModel { InvoiceListViewModel(get(), get()) }
-    viewModel { NotificationListViewModel(get(), get(), get(), get(), get(), get()) }
-    viewModel { CustomerProfileViewModel(get(), get(), get(), get(), get()) }
-    viewModel { PhanAnhViewModel(get()) }
+    viewModel { HomeViewModel(get(), get(), get(), get(), get(), get()) }
+    viewModel { InvoiceListViewModel(get(), get(), get()) }
+    viewModel { NotificationListViewModel(get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { CustomerProfileViewModel(get(), get(), get(), get()) }
+    viewModel { PhanAnhViewModel(get(), get(), get()) }
     viewModel { PhanAnhListViewModel(get()) }
-    viewModel { (id: Long) -> PhanAnhDetailViewModel(get(), id) }
-    viewModel { (id: Long) -> InvoiceDetailViewModel(get(), get(), get(), id) }
+    viewModel { (id: Long) -> PhanAnhDetailViewModel(get(), get(), id) }
+    viewModel { (id: Long) -> InvoiceDetailViewModel(get(), get(), get(), get(), id) }
 }

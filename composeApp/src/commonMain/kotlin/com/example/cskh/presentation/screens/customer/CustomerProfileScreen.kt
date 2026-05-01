@@ -43,6 +43,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -78,6 +79,14 @@ fun CustomerProfileScreen(
     val state by viewModel.state.collectAsState()
     var showLogoutDialog by remember { mutableStateOf(false) }
 
+    // Khi refresh token hết hạn → tự động điều hướng về Login
+    LaunchedEffect(state.sessionExpired) {
+        if (state.sessionExpired) {
+            viewModel.acknowledgeSessionExpired()
+            onLogout()
+        }
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -94,8 +103,7 @@ fun CustomerProfileScreen(
                     Button(
                         onClick = {
                             showLogoutDialog = false
-                            viewModel.logout()
-                            onLogout()
+                            viewModel.logout(onLogout)
                         },
                     ) { Text("Đăng xuất") }
                 },

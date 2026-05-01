@@ -2,6 +2,7 @@ package com.example.cskh.presentation.screens.invoices
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.cskh.data.session.TokenRefreshCoordinator
 import com.example.cskh.domain.model.InvoiceDetail
 import com.example.cskh.domain.usecase.DownloadAndSaveEInvoiceZipUseCase
 import com.example.cskh.domain.usecase.GetInvoiceDetailUseCase
@@ -19,12 +20,15 @@ data class InvoiceDetailUiState(
     val isEInvoiceDownloading: Boolean = false,
     val eInvoiceMessage: String? = null,
     val eInvoiceError: String? = null,
+    /** true khi refresh token hết hạn → caller điều hướng về màn hình Login */
+    val sessionExpired: Boolean = false,
 )
 
 class InvoiceDetailViewModel(
     private val getDetail: GetInvoiceDetailUseCase,
     private val formPreferences: UserFormPreferencesUseCase,
     private val downloadAndSaveEInvoiceZip: DownloadAndSaveEInvoiceZipUseCase,
+    private val tokenRefresh: TokenRefreshCoordinator,
     private val invoiceId: Long,
 ) : ViewModel() {
 
@@ -44,6 +48,16 @@ class InvoiceDetailViewModel(
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
             val result = getDetail(baseUrl, invoiceId)
+            
+            if (isUnauthorized(result)) {
+                if (!tokenRefresh.tryRefresh()) {
+                    _state.update { it.copy(isLoading = false, sessionExpired = true) }
+                    return@launch
+                }
+                load()
+                return@launch
+            }
+
             result.fold(
                 onSuccess = { d ->
                     _state.update { it.copy(detail = d, isLoading = false) }
@@ -61,6 +75,10 @@ class InvoiceDetailViewModel(
         _state.update { it.copy(errorMessage = null) }
     }
 
+    fun acknowledgeSessionExpired() {
+        _state.update { it.copy(sessionExpired = false) }
+    }
+
     fun onDownloadEInvoiceZip() {
         val baseUrl = formPreferences.getBaseUrl()
         if (baseUrl.isBlank()) {
@@ -75,7 +93,18 @@ class InvoiceDetailViewModel(
                     eInvoiceMessage = null,
                 )
             }
-            downloadAndSaveEInvoiceZip(baseUrl, invoiceId).fold(
+            val result = downloadAndSaveEInvoiceZip(baseUrl, invoiceId)
+
+            if (isUnauthorized(result)) {
+                if (!tokenRefresh.tryRefresh()) {
+                    _state.update { it.copy(isEInvoiceDownloading = false, sessionExpired = true) }
+                    return@launch
+                }
+                onDownloadEInvoiceZip()
+                return@launch
+            }
+
+            result.fold(
                 onSuccess = { pathOrHint ->
                     _state.update {
                         it.copy(isEInvoiceDownloading = false, eInvoiceMessage = pathOrHint)
@@ -96,4 +125,9 @@ class InvoiceDetailViewModel(
     fun clearEInvoiceFeedback() {
         _state.update { it.copy(eInvoiceMessage = null, eInvoiceError = null) }
     }
+
+    private fun isUnauthorized(result: Result<*>): Boolean =
+        result.exceptionOrNull()?.message?.let {
+            it.contains("401") || it.contains("UNAUTHORIZED_401") || it.contains("Chưa đăng nhập")
+        } == true
 }

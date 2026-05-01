@@ -24,6 +24,9 @@ class CustomerRepositoryImpl(
         val response = client.get(url) {
             header(HttpHeaders.Authorization, "Bearer $token")
         }
+        if (response.status.value == 401) {
+            error("UNAUTHORIZED_401")
+        }
         if (response.status.value !in 200..299) {
             val text = runCatching { response.bodyAsText() }.getOrNull()
             error(text ?: "HTTP ${response.status.value}")

@@ -2,7 +2,7 @@ package com.example.cskh.presentation.screens.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.cskh.data.session.SessionManager
+import com.example.cskh.data.session.TokenRefreshCoordinator
 import com.example.cskh.domain.model.CustomerProfile
 import com.example.cskh.domain.model.InvoiceDetail
 import com.example.cskh.domain.model.InvoiceSummary
@@ -10,7 +10,8 @@ import com.example.cskh.domain.usecase.GetCustomerMeUseCase
 import com.example.cskh.domain.usecase.GetInvoiceDetailUseCase
 import com.example.cskh.domain.usecase.GetInvoicesUseCase
 import com.example.cskh.domain.usecase.UserFormPreferencesUseCase
-import com.example.cskh.platform.FcmDeviceSync
+import com.example.cskh.platform.defaultDevMachineApiBaseUrl
+import com.example.cskh.presentation.CompanyBranding
 import com.example.cskh.presentation.NotificationBadgeStore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,16 +25,17 @@ data class HomeUiState(
     val recentInvoices: List<InvoiceSummary> = emptyList(),
     val isLoading: Boolean = false,
     val errorMessage: String? = null,
+    /** true khi refresh token hết hạn → caller điều hướng về màn hình Login */
+    val sessionExpired: Boolean = false,
 )
 
 class HomeViewModel(
-    private val sessionManager: SessionManager,
+    private val tokenRefresh: TokenRefreshCoordinator,
     private val formPreferences: UserFormPreferencesUseCase,
     private val getCustomerMe: GetCustomerMeUseCase,
     private val getInvoices: GetInvoicesUseCase,
     private val getInvoiceDetail: GetInvoiceDetailUseCase,
     private val notificationBadgeStore: NotificationBadgeStore,
-    private val fcmDeviceSync: FcmDeviceSync,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(HomeUiState())
@@ -43,12 +45,16 @@ class HomeViewModel(
         refresh()
     }
 
-    fun logout() {
+    /**
+     * Đăng xuất: gọi API /auth/logout → xóa local session.
+     * Caller (App.kt) lắng nghe sessionExpired hoặc onLogout callback để navigate.
+     */
+    fun logout(onLoggedOut: () -> Unit) {
+        val baseUrl = defaultDevMachineApiBaseUrl(CompanyBranding.DEV_API_PORT)
         viewModelScope.launch {
-            runCatching { fcmDeviceSync.unregisterIfLoggedIn() }
             notificationBadgeStore.clear()
-            formPreferences.clearAccessToken()
-            sessionManager.clear()
+            tokenRefresh.logout(baseUrl)
+            onLoggedOut()
         }
     }
 
@@ -60,9 +66,20 @@ class HomeViewModel(
         }
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
-            val meResult = getCustomerMe(baseUrl)
-            val invoicesResult = getInvoices(baseUrl, 1, 5)
 
+            val meResult = getCustomerMe(baseUrl)
+            // Nếu 401 → thử refresh token
+            if (isUnauthorized(meResult)) {
+                if (!tokenRefresh.tryRefresh()) {
+                    _state.update { it.copy(isLoading = false, sessionExpired = true) }
+                    return@launch
+                }
+                // Retry sau khi refresh thành công
+                refresh()
+                return@launch
+            }
+
+            val invoicesResult = getInvoices(baseUrl, 1, 5)
             val me = meResult.getOrNull()
             val invoices = invoicesResult.getOrNull()?.items.orEmpty()
             val newestId = invoices.firstOrNull()?.id
@@ -75,10 +92,21 @@ class HomeViewModel(
                     currentInvoiceDetail = detail,
                     recentInvoices = invoices,
                     isLoading = false,
-                    errorMessage = (meResult.exceptionOrNull() ?: invoicesResult.exceptionOrNull() ?: detailResult.exceptionOrNull())?.message,
+                    errorMessage = (meResult.exceptionOrNull()
+                        ?: invoicesResult.exceptionOrNull()
+                        ?: detailResult.exceptionOrNull())?.message,
                 )
             }
             notificationBadgeStore.refreshFromNetwork()
         }
     }
+
+    fun acknowledgeSessionExpired() {
+        _state.update { it.copy(sessionExpired = false) }
+    }
+
+    private fun isUnauthorized(result: Result<*>): Boolean =
+        result.exceptionOrNull()?.message?.let {
+            it.contains("401") || it.contains("UNAUTHORIZED_401") || it.contains("Chưa đăng nhập")
+        } == true
 }

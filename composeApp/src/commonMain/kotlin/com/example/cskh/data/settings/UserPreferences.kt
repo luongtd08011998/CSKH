@@ -10,6 +10,7 @@ class UserPreferences(private val settings: Settings) : UserFormStore {
     override fun loadBaseUrl(): String = settings.getString(KEY_BASE, "")
 
     override fun loadAccessToken(): String = settings.getString(KEY_ACCESS, "")
+    override fun loadRefreshToken(): String = settings.getString(KEY_REFRESH, "")
     override fun loadNotificationPermissionPrompted(): Boolean = settings.getBoolean(KEY_NOTIF_PROMPTED, false)
 
     override fun save(digiCode: String, phone: String, baseUrl: String) {
@@ -22,6 +23,10 @@ class UserPreferences(private val settings: Settings) : UserFormStore {
         settings.putString(KEY_ACCESS, token)
     }
 
+    override fun saveRefreshToken(token: String) {
+        settings.putString(KEY_REFRESH, token)
+    }
+
     override fun saveNotificationPermissionPrompted(value: Boolean) {
         settings.putBoolean(KEY_NOTIF_PROMPTED, value)
     }
@@ -30,11 +35,16 @@ class UserPreferences(private val settings: Settings) : UserFormStore {
         settings.putString(KEY_ACCESS, "")
     }
 
+    override fun clearRefreshToken() {
+        settings.putString(KEY_REFRESH, "")
+    }
+
     companion object {
         private const val KEY_DIGI = "pref_digi_code"
         private const val KEY_PHONE = "pref_phone"
         private const val KEY_BASE = "pref_base_url"
         private const val KEY_ACCESS = "pref_access_token"
+        private const val KEY_REFRESH = "pref_refresh_token"
         private const val KEY_NOTIF_PROMPTED = "pref_notification_permission_prompted"
     }
 }

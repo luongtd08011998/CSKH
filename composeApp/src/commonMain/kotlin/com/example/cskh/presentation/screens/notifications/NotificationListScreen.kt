@@ -75,10 +75,29 @@ fun NotificationType.getBackgroundColor(): Color {
 @Composable
 fun NotificationListScreen(
     onBack: () -> Unit,
+    onLogout: () -> Unit,
     onNavigateArticle: (title: String, content: String) -> Unit = { _, _ -> },
     viewModel: NotificationListViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
+
+    if (state.sessionExpired) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { },
+            title = { Text("Phiên đăng nhập hết hạn") },
+            text = { Text("Phiên làm việc của bạn đã hết hạn. Vui lòng đăng nhập lại để tiếp tục sử dụng.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.acknowledgeSessionExpired()
+                        onLogout()
+                    }
+                ) {
+                    Text("OK")
+                }
+            }
+        )
+    }
     val maintenanceState by viewModel.maintenanceState.collectAsState()
     val featuredState by viewModel.featuredState.collectAsState()
     val uriHandler = LocalUriHandler.current

@@ -9,13 +9,23 @@ data class LoginRequestDto(
 )
 
 @Serializable
-data class LoginDataDto(
-    val accessToken: String,
+data class RefreshRequestDto(
+    val refreshToken: String,
 )
 
 @Serializable
-data class LoginResponseDto(
-    val data: LoginDataDto? = null,
+data class AuthDataDto(
+    val accessToken: String,
+    val refreshToken: String,
+)
+
+@Serializable
+data class AuthResponseDto(
+    val data: AuthDataDto? = null,
     val message: String? = null,
     val statusCode: Int? = null,
 )
+
+// ── back-compat aliases ──────────────────────────────────────────────────────
+typealias LoginDataDto = AuthDataDto
+typealias LoginResponseDto = AuthResponseDto

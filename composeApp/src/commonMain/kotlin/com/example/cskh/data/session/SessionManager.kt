@@ -12,11 +12,22 @@ class SessionManager {
     val accessToken: String?
         get() = _tokenFlow.value
 
-    fun setToken(token: String?) {
-        _tokenFlow.value = token
+    /** RefreshToken lưu in-memory (cũng được persist vào UserPreferences riêng) */
+    var refreshToken: String? = null
+        private set
+
+    fun setToken(accessToken: String?, refreshToken: String? = null) {
+        _tokenFlow.value = accessToken
+        if (refreshToken != null) this.refreshToken = refreshToken
+    }
+
+    /** Gọi sau khi /auth/refresh thành công – chỉ cập nhật accessToken mới */
+    fun updateAccessToken(newAccessToken: String) {
+        _tokenFlow.value = newAccessToken
     }
 
     fun clear() {
-        setToken(null)
+        _tokenFlow.value = null
+        refreshToken = null
     }
 }

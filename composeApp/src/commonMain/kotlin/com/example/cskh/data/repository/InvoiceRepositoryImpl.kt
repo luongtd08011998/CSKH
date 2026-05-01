@@ -32,6 +32,9 @@ class InvoiceRepositoryImpl(
                 parameter("page", page)
                 parameter("pageSize", pageSize)
             }
+            if (response.status.value == 401) {
+                error("UNAUTHORIZED_401")
+            }
             if (response.status.value !in 200..299) {
                 val text = runCatching { response.bodyAsText() }.getOrNull()
                 error(text ?: "HTTP ${response.status.value}")
@@ -46,6 +49,9 @@ class InvoiceRepositoryImpl(
         val url = "${normalizeApiBaseUrl(baseUrl)}/api/v1/qlkh/invoices/$id"
         val response = client.get(url) {
             header(HttpHeaders.Authorization, "Bearer $token")
+        }
+        if (response.status.value == 401) {
+            error("UNAUTHORIZED_401")
         }
         if (response.status.value !in 200..299) {
             val text = runCatching { response.bodyAsText() }.getOrNull()

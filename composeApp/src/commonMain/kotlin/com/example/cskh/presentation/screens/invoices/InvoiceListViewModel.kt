@@ -2,6 +2,7 @@ package com.example.cskh.presentation.screens.invoices
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.cskh.data.session.TokenRefreshCoordinator
 import com.example.cskh.domain.model.InvoiceSummary
 import com.example.cskh.domain.model.PageMeta
 import com.example.cskh.domain.usecase.GetInvoicesUseCase
@@ -27,11 +28,14 @@ data class InvoiceListUiState(
     val currentPage: Int = 1,
     val searchQuery: String = "",
     val paymentFilter: InvoicePaymentFilter = InvoicePaymentFilter.All,
+    /** true khi refresh token hết hạn → caller điều hướng về màn hình Login */
+    val sessionExpired: Boolean = false,
 )
 
 class InvoiceListViewModel(
     private val getInvoices: GetInvoicesUseCase,
     private val formPreferences: UserFormPreferencesUseCase,
+    private val tokenRefresh: TokenRefreshCoordinator,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(InvoiceListUiState())
@@ -65,6 +69,10 @@ class InvoiceListViewModel(
         _state.update { it.copy(errorMessage = null) }
     }
 
+    fun acknowledgeSessionExpired() {
+        _state.update { it.copy(sessionExpired = false) }
+    }
+
     private fun loadPage(page: Int, append: Boolean) {
         val baseUrl = formPreferences.getBaseUrl()
         if (baseUrl.isBlank()) {
@@ -78,6 +86,18 @@ class InvoiceListViewModel(
                 _state.update { it.copy(isLoading = true, errorMessage = null) }
             }
             val result = getInvoices(baseUrl, page, PAGE_SIZE)
+
+            // Xử lý Unauthorized (401)
+            if (isUnauthorized(result)) {
+                if (!tokenRefresh.tryRefresh()) {
+                    _state.update { it.copy(isLoading = false, isLoadingMore = false, sessionExpired = true) }
+                    return@launch
+                }
+                // Thử lại sau khi refresh thành công
+                loadPage(page, append)
+                return@launch
+            }
+
             result.fold(
                 onSuccess = { paged ->
                     _state.update { st ->
@@ -103,6 +123,11 @@ class InvoiceListViewModel(
             )
         }
     }
+
+    private fun isUnauthorized(result: Result<*>): Boolean =
+        result.exceptionOrNull()?.message?.let {
+            it.contains("401") || it.contains("UNAUTHORIZED_401") || it.contains("Chưa đăng nhập")
+        } == true
 
     companion object {
         private const val PAGE_SIZE = 20

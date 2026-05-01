@@ -52,6 +52,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -156,9 +157,28 @@ private fun InvoiceDetail.waterUsedM3(): Int {
 fun InvoiceDetailScreen(
     invoiceId: Long,
     onBack: () -> Unit,
+    onLogout: () -> Unit,
 ) {
     val viewModel: InvoiceDetailViewModel = koinViewModel(parameters = { parametersOf(invoiceId) })
     val state by viewModel.state.collectAsState()
+
+    if (state.sessionExpired) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { },
+            title = { Text("Phiên đăng nhập hết hạn") },
+            text = { Text("Phiên làm việc của bạn đã hết hạn. Vui lòng đăng nhập lại để tiếp tục sử dụng.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.acknowledgeSessionExpired()
+                        onLogout()
+                    }
+                ) {
+                    Text("OK")
+                }
+            }
+        )
+    }
     val clipboard = LocalClipboardManager.current
     var showVietQrDialog by remember { mutableStateOf(false) }
 

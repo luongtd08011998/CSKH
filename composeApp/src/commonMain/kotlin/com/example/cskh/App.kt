@@ -139,6 +139,11 @@ private fun MainNavHost(
         modifier = Modifier.fillMaxSize(),
     ) { innerPadding ->
         Surface(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+            val onLogout = {
+                navController.navigate(Screen.Login) {
+                    popUpTo(0) { inclusive = true }
+                }
+            }
             NavHost(
                 navController = navController,
                 startDestination = startDestination,
@@ -166,11 +171,7 @@ private fun MainNavHost(
                         onNavigateWaterPrice = { navController.navigate(Screen.WaterPrice) },
                         onNavigateAbout = { navController.navigate(Screen.About) },
                         onNavigatePhanAnh = { navController.navigate(Screen.PhanAnh) },
-                        onLogout = {
-                            navController.navigate(Screen.Login) {
-                                popUpTo<Screen.Home> { inclusive = true }
-                            }
-                        },
+                        onLogout = onLogout,
                     )
                 }
                 composable<Screen.Invoices> {
@@ -179,6 +180,7 @@ private fun MainNavHost(
                         onOpenDetail = { id ->
                             navController.navigate(Screen.InvoiceDetail(id))
                         },
+                        onLogout = onLogout,
                     )
                 }
                 composable<Screen.InvoiceDetail> { entry ->
@@ -186,6 +188,7 @@ private fun MainNavHost(
                     InvoiceDetailScreen(
                         invoiceId = route.id,
                         onBack = { navController.popBackStack() },
+                        onLogout = onLogout,
                     )
                 }
                 composable<Screen.Notifications> {
@@ -194,16 +197,13 @@ private fun MainNavHost(
                         onNavigateArticle = { title, content ->
                             navController.navigate(Screen.ArticleDetail(title, content))
                         },
+                        onLogout = onLogout,
                     )
                 }
                 composable<Screen.CustomerProfile> {
                     CustomerProfileScreen(
                         onBack = { navController.popBackStack() },
-                        onLogout = {
-                            navController.navigate(Screen.Login) {
-                                popUpTo<Screen.Home> { inclusive = true }
-                            }
-                        },
+                        onLogout = onLogout,
                     )
                 }
                 composable<Screen.WaterPrice> {
@@ -218,6 +218,7 @@ private fun MainNavHost(
                         onNavigateDetail = { id ->
                             navController.navigate(Screen.PhanAnhDetail(id))
                         },
+                        onLogout = onLogout,
                     )
                 }
                 composable<Screen.PhanAnhDetail> { entry ->
@@ -225,6 +226,7 @@ private fun MainNavHost(
                     PhanAnhDetailScreen(
                         feedbackId = route.id,
                         onBack = { navController.popBackStack() },
+                        onLogout = onLogout,
                     )
                 }
                 composable<Screen.ArticleDetail> { entry ->

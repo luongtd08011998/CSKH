@@ -43,6 +43,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -87,10 +88,29 @@ private val issueTypes = listOf(
 @Composable
 fun PhanAnhScreen(
     onBack: () -> Unit,
+    onLogout: () -> Unit,
     onNavigateDetail: (Long) -> Unit = {},
     viewModel: PhanAnhViewModel = koinViewModel(),
 ) {
     val vmState by viewModel.state.collectAsState()
+
+    if (vmState.sessionExpired) {
+        androidx.compose.material3.AlertDialog(
+            onDismissRequest = { },
+            title = { Text("Phiên đăng nhập hết hạn") },
+            text = { Text("Phiên làm việc của bạn đã hết hạn. Vui lòng đăng nhập lại để tiếp tục sử dụng.") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        viewModel.acknowledgeSessionExpired()
+                        onLogout()
+                    }
+                ) {
+                    Text("OK")
+                }
+            }
+        )
+    }
     var selectedTabIndex by remember { mutableIntStateOf(0) }
     var selectedIssue by remember { mutableStateOf<String?>(null) }
     var address by remember { mutableStateOf("") }

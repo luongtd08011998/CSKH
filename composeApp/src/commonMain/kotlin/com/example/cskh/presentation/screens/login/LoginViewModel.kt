@@ -65,14 +65,17 @@ class LoginViewModel(
             _state.update { it.copy(isLoading = true, errorMessage = null) }
             val result = loginUseCase(baseUrl, s.digiCode.trim(), s.phone.trim())
             result.fold(
-                onSuccess = { token ->
+                onSuccess = { (accessToken, refreshToken) ->
                     if (s.rememberLogin) {
                         formPreferences.saveForm(s.digiCode.trim(), s.phone.trim(), baseUrl)
                     } else {
                         formPreferences.saveForm("", "", baseUrl)
                     }
-                    formPreferences.saveAccessToken(token)
-                    sessionManager.setToken(token)
+                    // Lưu cả hai token vào persistent storage
+                    formPreferences.saveAccessToken(accessToken)
+                    formPreferences.saveRefreshToken(refreshToken)
+                    // Cập nhật session in-memory
+                    sessionManager.setToken(accessToken, refreshToken)
                     fcmDeviceSync.registerIfLoggedIn()
                     _state.update { it.copy(isLoading = false) }
                     onSuccess()
