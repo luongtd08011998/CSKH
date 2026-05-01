@@ -36,13 +36,15 @@ import org.koin.compose.viewmodel.koinViewModel
 enum class NotificationType {
     BILLING,      // Hóa đơn
     MAINTENANCE,  // Cúp nước/Bảo trì
-    GENERAL       // Tin nổi bật
+    GENERAL,      // Tin nổi bật
+    FEEDBACK,     // Phản ánh dịch vụ
 }
 
 fun String.toNotificationType(): NotificationType {
     return when (this.uppercase()) {
         "BILLING", "INVOICE", "PAYMENT" -> NotificationType.BILLING
         "MAINTENANCE", "WATER_CUT" -> NotificationType.MAINTENANCE
+        "FEEDBACK" -> NotificationType.FEEDBACK
         else -> NotificationType.GENERAL
     }
 }
@@ -51,22 +53,25 @@ fun NotificationType.getIcon(): ImageVector {
     return when (this) {
         NotificationType.BILLING -> Icons.Default.Receipt
         NotificationType.MAINTENANCE -> Icons.Default.WaterDrop
+        NotificationType.FEEDBACK -> Icons.Default.Feedback
         NotificationType.GENERAL -> Icons.Default.Info
     }
 }
 
 fun NotificationType.getColor(): Color {
     return when (this) {
-        NotificationType.BILLING -> Color(0xFF2196F3)      // Xanh dương
-        NotificationType.MAINTENANCE -> Color(0xFFEF5350)  // Đỏ
-        NotificationType.GENERAL -> Color(0xFF9C27B0)      // Tím
+        NotificationType.BILLING -> Color(0xFF2196F3)       // Xanh dương
+        NotificationType.MAINTENANCE -> Color(0xFFEF5350)   // Đỏ
+        NotificationType.FEEDBACK -> Color(0xFF4CAF50)      // Xanh lá
+        NotificationType.GENERAL -> Color(0xFF9C27B0)       // Tím
     }
 }
 
 fun NotificationType.getBackgroundColor(): Color {
     return when (this) {
         NotificationType.BILLING -> Color(0xFFE3F2FD)
-        NotificationType.MAINTENANCE -> Color(0xFFFFF3E0)  // Cam nhạt
+        NotificationType.MAINTENANCE -> Color(0xFFFFF3E0)
+        NotificationType.FEEDBACK -> Color(0xFFE8F5E9)
         NotificationType.GENERAL -> Color(0xFFF3E5F5)
     }
 }
@@ -77,6 +82,10 @@ fun NotificationListScreen(
     onBack: () -> Unit,
     onLogout: () -> Unit,
     onNavigateArticle: (title: String, content: String) -> Unit = { _, _ -> },
+    // Spec phananh_reply.md §4: tap vào thông báo FEEDBACK → navigate FeedbackDetailScreen
+    onNavigateFeedback: (feedbackId: Long) -> Unit = {},
+    // Deep link đến màn hình Hóa đơn khi click vào thông báo Hóa đơn/Thanh toán
+    onNavigateInvoices: () -> Unit = {},
     viewModel: NotificationListViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -306,13 +315,23 @@ fun NotificationListScreen(
                                         EmptyView(state.errorMessage ?: "Không có thông báo")
                                     }
                                 } else {
-                                    items(finalFilteredNotifications, key = { it.id }) { notification ->
+                                items(finalFilteredNotifications, key = { it.id }) { notification ->
                                         NotificationCard(
                                             notification = notification,
                                             onClick = {
+                                                // Spec phananh_reply.md §4 & §5: mark-as-read sau khi tap
                                                 viewModel.markRead(notification.id)
-                                                if (notification.referenceId != null) {
-                                                    onNavigateArticle(notification.title, notification.content)
+                                                when {
+                                                    notification.type.toNotificationType() == NotificationType.FEEDBACK
+                                                        && notification.referenceId != null -> {
+                                                        onNavigateFeedback(notification.referenceId)
+                                                    }
+                                                    notification.type.toNotificationType() == NotificationType.BILLING -> {
+                                                        onNavigateInvoices()
+                                                    }
+                                                    notification.referenceId != null -> {
+                                                        onNavigateArticle(notification.title, notification.content)
+                                                    }
                                                 }
                                             },
                                             onViewDetail = {

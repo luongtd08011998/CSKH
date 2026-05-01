@@ -53,7 +53,12 @@ import com.example.cskh.platform.NotificationPermissionGate
 import org.koin.compose.koinInject
 
 @Composable
-fun App(pendingArticleTitle: String? = null, pendingArticleContent: String? = null) {
+fun App(
+    pendingArticleTitle: String? = null,
+    pendingArticleContent: String? = null,
+    pendingFeedbackId: Long? = null,
+    pendingNavigateTo: String? = null,
+) {
     setSingletonImageLoaderFactory { context ->
         ImageLoader.Builder(context)
             .components {
@@ -65,7 +70,12 @@ fun App(pendingArticleTitle: String? = null, pendingArticleContent: String? = nu
         CskhTheme {
             Surface(modifier = Modifier.fillMaxSize()) {
                 NotificationPermissionGate()
-                MainNavHost(pendingArticleTitle = pendingArticleTitle, pendingArticleContent = pendingArticleContent)
+            MainNavHost(
+                    pendingArticleTitle = pendingArticleTitle,
+                    pendingArticleContent = pendingArticleContent,
+                    pendingFeedbackId = pendingFeedbackId,
+                    pendingNavigateTo = pendingNavigateTo,
+                )
             }
         }
     }
@@ -75,6 +85,8 @@ fun App(pendingArticleTitle: String? = null, pendingArticleContent: String? = nu
 private fun MainNavHost(
     pendingArticleTitle: String? = null,
     pendingArticleContent: String? = null,
+    pendingFeedbackId: Long? = null,
+    pendingNavigateTo: String? = null,
 ) {
     val sessionManager = koinInject<SessionManager>()
     val notificationBadgeStore = koinInject<NotificationBadgeStore>()
@@ -106,6 +118,23 @@ private fun MainNavHost(
             navController.navigate(
                 Screen.ArticleDetail(title = pendingArticleTitle, content = pendingArticleContent)
             )
+        }
+    }
+
+    // Spec phananh_reply.md §1: FEEDBACK push → navigate FeedbackDetailScreen(id)
+    LaunchedEffect(pendingFeedbackId) {
+        if (pendingFeedbackId != null && pendingFeedbackId > 0) {
+            navController.navigate(Screen.PhanAnhDetail(pendingFeedbackId))
+        }
+    }
+
+    // Hóa đơn / Thanh toán: tap push → mở thẳng màn hình Danh sách Hóa đơn
+    LaunchedEffect(pendingNavigateTo) {
+        if (pendingNavigateTo == "invoices") {
+            navController.navigate(Screen.Invoices) {
+                popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                launchSingleTop = true
+            }
         }
     }
 
@@ -196,6 +225,17 @@ private fun MainNavHost(
                         onBack = { navController.popBackStack() },
                         onNavigateArticle = { title, content ->
                             navController.navigate(Screen.ArticleDetail(title, content))
+                        },
+                        // Spec phananh_reply.md §4: type=FEEDBACK → PhanAnhDetailScreen
+                        onNavigateFeedback = { feedbackId ->
+                            navController.navigate(Screen.PhanAnhDetail(feedbackId))
+                        },
+                        // Hóa đơn / Thanh toán: click thẻ trong tab Thông báo → Danh sách Hóa đơn
+                        onNavigateInvoices = {
+                            navController.navigate(Screen.Invoices) {
+                                popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                                launchSingleTop = true
+                            }
                         },
                         onLogout = onLogout,
                     )

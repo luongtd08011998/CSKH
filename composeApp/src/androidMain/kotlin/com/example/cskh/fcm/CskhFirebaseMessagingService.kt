@@ -51,6 +51,21 @@ class CskhFirebaseMessagingService : FirebaseMessagingService() {
             return
         }
 
+        // Spec phananh_reply.md: type=FEEDBACK → deep link đến PhanAnhDetailScreen
+        if (type.equals("FEEDBACK", ignoreCase = true) && referenceId.isNotBlank()) {
+            val feedbackId = referenceId.toLongOrNull()
+            if (feedbackId != null) {
+                showFeedbackNotification(title = title, body = body, feedbackId = feedbackId)
+                return
+            }
+        }
+
+        // Spec: type=INVOICE hoặc PAYMENT → deep link vào màn hình Hóa đơn
+        if (type.equals("INVOICE", ignoreCase = true) || type.equals("PAYMENT", ignoreCase = true)) {
+            showInvoiceNotification(title = title, body = body)
+            return
+        }
+
         if (body.isBlank() && url.isBlank()) return
 
         showNotification(title = title, body = body, url = url)
@@ -114,6 +129,68 @@ class CskhFirebaseMessagingService : FirebaseMessagingService() {
             .build()
 
         NotificationManagerCompat.from(this).notify(articleTitle.hashCode(), notification)
+    }
+
+    // Spec phananh_reply.md §1: FEEDBACK push → navigate FeedbackDetailScreen(id)
+    private fun showFeedbackNotification(title: String, body: String, feedbackId: Long) {
+        val channelId = "FEEDBACK_UPDATE"
+        ensureChannel(channelId, name = "Cập nhật phản ánh")
+
+        val intent = Intent(this, MainActivity::class.java).apply {
+            putExtra("feedback_id", feedbackId)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        }
+        val flags = (PendingIntent.FLAG_UPDATE_CURRENT or
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
+        val contentIntent = PendingIntent.getActivity(
+            this,
+            ("FEEDBACK_$feedbackId").hashCode(),
+            intent,
+            flags
+        )
+
+        val notification = NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(contentIntent)
+            .build()
+
+        NotificationManagerCompat.from(this).notify(("FEEDBACK_$feedbackId").hashCode(), notification)
+    }
+
+    // Hóa đơn mới / Thanh toán thành công → mở màn hình Danh sách Hóa đơn
+    private fun showInvoiceNotification(title: String, body: String) {
+        val channelId = "INVOICE_BILLING"
+        ensureChannel(channelId, name = "Hóa đơn tiền nước")
+
+        val intent = Intent(this, MainActivity::class.java).apply {
+            putExtra("navigate_to", "invoices")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        }
+        val flags = (PendingIntent.FLAG_UPDATE_CURRENT or
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
+        val contentIntent = PendingIntent.getActivity(
+            this,
+            "INVOICE".hashCode(),
+            intent,
+            flags
+        )
+
+        val notification = NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(contentIntent)
+            .build()
+
+        NotificationManagerCompat.from(this).notify("INVOICE".hashCode(), notification)
     }
 
     private fun ensureChannel(channelId: String, name: String) {

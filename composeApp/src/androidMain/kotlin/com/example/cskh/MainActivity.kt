@@ -14,8 +14,15 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         val (title, content) = extractArticle(intent)
+        val feedbackId = extractFeedbackId(intent)
+        val navigateTo = extractNavigateTo(intent)
         setContent {
-            App(pendingArticleTitle = title, pendingArticleContent = content)
+            App(
+                pendingArticleTitle = title,
+                pendingArticleContent = content,
+                pendingFeedbackId = feedbackId,
+                pendingNavigateTo = navigateTo,
+            )
         }
     }
 
@@ -24,8 +31,15 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         val (title, content) = extractArticle(intent)
+        val feedbackId = extractFeedbackId(intent)
+        val navigateTo = extractNavigateTo(intent)
         setContent {
-            App(pendingArticleTitle = title, pendingArticleContent = content)
+            App(
+                pendingArticleTitle = title,
+                pendingArticleContent = content,
+                pendingFeedbackId = feedbackId,
+                pendingNavigateTo = navigateTo,
+            )
         }
     }
 
@@ -33,6 +47,16 @@ class MainActivity : ComponentActivity() {
         val title = intent?.getStringExtra("article_title")
         val content = intent?.getStringExtra("article_content")
         return Pair(title, content)
+    }
+
+    // Spec phananh_reply.md §6: referenceId từ FCM là String, parse sang Long trước khi dùng
+    private fun extractFeedbackId(intent: android.content.Intent?): Long? {
+        return intent?.getLongExtra("feedback_id", -1L)?.takeIf { it > 0 }
+    }
+
+    // Hóa đơn / Thanh toán: đọc extra "navigate_to" được đặt bởi FCM Service
+    private fun extractNavigateTo(intent: android.content.Intent?): String? {
+        return intent?.getStringExtra("navigate_to")
     }
 }
 
