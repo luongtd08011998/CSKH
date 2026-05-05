@@ -247,10 +247,14 @@ private fun MainNavHost(
                             navController.navigate(Screen.PhanAnhDetail(feedbackId))
                         },
                         // Hóa đơn / Thanh toán: click thẻ trong tab Thông báo → Danh sách Hóa đơn
-                        onNavigateInvoices = {
-                            navController.navigate(Screen.Invoices) {
-                                popUpTo(navController.graph.startDestinationId) { inclusive = false }
-                                launchSingleTop = true
+                        onNavigateInvoices = { invoiceId ->
+                            if (invoiceId != null) {
+                                navController.navigate(Screen.InvoiceDetail(invoiceId))
+                            } else {
+                                navController.navigate(Screen.Invoices) {
+                                    popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                                    launchSingleTop = true
+                                }
                             }
                         },
                         initialTab = route.initialTab,

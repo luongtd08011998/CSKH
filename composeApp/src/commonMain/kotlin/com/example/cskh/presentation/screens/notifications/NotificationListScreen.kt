@@ -85,7 +85,7 @@ fun NotificationListScreen(
     // Spec phananh_reply.md §4: tap vào thông báo FEEDBACK → navigate FeedbackDetailScreen
     onNavigateFeedback: (feedbackId: Long) -> Unit = {},
     // Deep link đến màn hình Hóa đơn khi click vào thông báo Hóa đơn/Thanh toán
-    onNavigateInvoices: () -> Unit = {},
+    onNavigateInvoices: (invoiceId: Long?) -> Unit = {},
     initialTab: Int = 0,
     viewModel: NotificationListViewModel = koinViewModel(),
 ) {
@@ -333,7 +333,7 @@ fun NotificationListScreen(
                                                         onNavigateFeedback(notification.referenceId)
                                                     }
                                                     notification.type.toNotificationType() == NotificationType.BILLING -> {
-                                                        onNavigateInvoices()
+                                                        onNavigateInvoices(notification.referenceId)
                                                     }
                                                     notification.referenceId != null -> {
                                                         onNavigateArticle(notification.title, notification.content)
