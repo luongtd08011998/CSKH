@@ -86,6 +86,7 @@ fun NotificationListScreen(
     onNavigateFeedback: (feedbackId: Long) -> Unit = {},
     // Deep link đến màn hình Hóa đơn khi click vào thông báo Hóa đơn/Thanh toán
     onNavigateInvoices: () -> Unit = {},
+    initialTab: Int = 0,
     viewModel: NotificationListViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -114,8 +115,13 @@ fun NotificationListScreen(
         { url -> uriHandler.openUri(url) }
     }
 
-    var selectedTab by remember { mutableStateOf(0) }
+    var selectedTab by remember { mutableStateOf(initialTab) }
     var searchQuery by remember { mutableStateOf("") }
+
+    // Cập nhật tab khi tham số đầu vào thay đổi (deep link)
+    LaunchedEffect(initialTab) {
+        selectedTab = initialTab
+    }
 
     val tabs = listOf(
         "Hóa đơn" to NotificationType.BILLING,

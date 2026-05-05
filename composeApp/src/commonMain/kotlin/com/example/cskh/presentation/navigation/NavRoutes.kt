@@ -16,7 +16,7 @@ sealed interface Screen {
     data class InvoiceDetail(val id: Long) : Screen
 
     @Serializable
-    data object Notifications : Screen
+    data class Notifications(val initialTab: Int = 0) : Screen
 
     @Serializable
     data object CustomerProfile : Screen

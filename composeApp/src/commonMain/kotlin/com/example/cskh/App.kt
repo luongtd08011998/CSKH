@@ -58,6 +58,7 @@ fun App(
     pendingArticleContent: String? = null,
     pendingFeedbackId: Long? = null,
     pendingNavigateTo: String? = null,
+    onNavigationHandled: () -> Unit = {},
 ) {
     setSingletonImageLoaderFactory { context ->
         ImageLoader.Builder(context)
@@ -75,6 +76,7 @@ fun App(
                     pendingArticleContent = pendingArticleContent,
                     pendingFeedbackId = pendingFeedbackId,
                     pendingNavigateTo = pendingNavigateTo,
+                    onNavigationHandled = onNavigationHandled,
                 )
             }
         }
@@ -87,6 +89,7 @@ private fun MainNavHost(
     pendingArticleContent: String? = null,
     pendingFeedbackId: Long? = null,
     pendingNavigateTo: String? = null,
+    onNavigationHandled: () -> Unit = {},
 ) {
     val sessionManager = koinInject<SessionManager>()
     val notificationBadgeStore = koinInject<NotificationBadgeStore>()
@@ -128,12 +131,24 @@ private fun MainNavHost(
         }
     }
 
-    // Hóa đơn / Thanh toán: tap push → mở thẳng màn hình Danh sách Hóa đơn
+    // Hóa đơn / Thanh toán: tap push → mở màn hình Danh sách Thông báo, Tab Hóa đơn
     LaunchedEffect(pendingNavigateTo) {
-        if (pendingNavigateTo == "invoices") {
-            navController.navigate(Screen.Invoices) {
-                popUpTo(navController.graph.startDestinationId) { inclusive = false }
-                launchSingleTop = true
+        if (!pendingNavigateTo.isNullOrBlank()) {
+            // Tăng delay để chắc chắn NavHost đã ổn định startDestination
+            kotlinx.coroutines.delay(300)
+            
+            val targetRoute = when (pendingNavigateTo) {
+                "notifications_billing" -> Screen.Notifications(initialTab = 0)
+                "notifications_maintenance" -> Screen.Notifications(initialTab = 1)
+                "notifications_featured" -> Screen.Notifications(initialTab = 2)
+                else -> null
+            }
+            
+            targetRoute?.let { route ->
+                navController.navigate(route) {
+                    launchSingleTop = true
+                }
+                onNavigationHandled()
             }
         }
     }
@@ -151,7 +166,7 @@ private fun MainNavHost(
                         }
                     },
                     onSelectNotifications = {
-                        navController.navigate(Screen.Notifications) {
+                        navController.navigate(Screen.Notifications(initialTab = 0)) {
                             popUpTo(navController.graph.startDestinationId) { inclusive = false }
                             launchSingleTop = true
                         }
@@ -195,7 +210,7 @@ private fun MainNavHost(
                         onNavigateInvoiceDetail = { id ->
                             navController.navigate(Screen.InvoiceDetail(id))
                         },
-                        onNavigateNotifications = { navController.navigate(Screen.Notifications) },
+                        onNavigateNotifications = { navController.navigate(Screen.Notifications()) },
                         onNavigateCustomerProfile = { navController.navigate(Screen.CustomerProfile) },
                         onNavigateWaterPrice = { navController.navigate(Screen.WaterPrice) },
                         onNavigateAbout = { navController.navigate(Screen.About) },
@@ -220,7 +235,8 @@ private fun MainNavHost(
                         onLogout = onLogout,
                     )
                 }
-                composable<Screen.Notifications> {
+                composable<Screen.Notifications> { entry ->
+                    val route: Screen.Notifications = entry.toRoute()
                     NotificationListScreen(
                         onBack = { navController.popBackStack() },
                         onNavigateArticle = { title, content ->
@@ -237,6 +253,7 @@ private fun MainNavHost(
                                 launchSingleTop = true
                             }
                         },
+                        initialTab = route.initialTab,
                         onLogout = onLogout,
                     )
                 }

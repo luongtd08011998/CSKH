@@ -66,6 +66,16 @@ class CskhFirebaseMessagingService : FirebaseMessagingService() {
             return
         }
 
+        if (type.equals("MAINTENANCE", ignoreCase = true) || type.equals("WATER_CUT", ignoreCase = true)) {
+            showMaintenanceNotification(title = title, body = body)
+            return
+        }
+
+        if (type.equals("NOTIFICATION", ignoreCase = true) || type.equals("FEATURED", ignoreCase = true)) {
+            showGeneralNewsNotification(title = title, body = body)
+            return
+        }
+
         if (body.isBlank() && url.isBlank()) return
 
         showNotification(title = title, body = body, url = url)
@@ -142,9 +152,10 @@ class CskhFirebaseMessagingService : FirebaseMessagingService() {
         }
         val flags = (PendingIntent.FLAG_UPDATE_CURRENT or
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
+        val requestCode = System.currentTimeMillis().toInt()
         val contentIntent = PendingIntent.getActivity(
             this,
-            ("FEEDBACK_$feedbackId").hashCode(),
+            requestCode,
             intent,
             flags
         )
@@ -159,7 +170,7 @@ class CskhFirebaseMessagingService : FirebaseMessagingService() {
             .setContentIntent(contentIntent)
             .build()
 
-        NotificationManagerCompat.from(this).notify(("FEEDBACK_$feedbackId").hashCode(), notification)
+        NotificationManagerCompat.from(this).notify(requestCode, notification)
     }
 
     // Hóa đơn mới / Thanh toán thành công → mở màn hình Danh sách Hóa đơn
@@ -168,14 +179,15 @@ class CskhFirebaseMessagingService : FirebaseMessagingService() {
         ensureChannel(channelId, name = "Hóa đơn tiền nước")
 
         val intent = Intent(this, MainActivity::class.java).apply {
-            putExtra("navigate_to", "invoices")
+            putExtra("navigate_to", "notifications_billing")
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         }
         val flags = (PendingIntent.FLAG_UPDATE_CURRENT or
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
+        val requestCode = System.currentTimeMillis().toInt()
         val contentIntent = PendingIntent.getActivity(
             this,
-            "INVOICE".hashCode(),
+            requestCode,
             intent,
             flags
         )
@@ -190,7 +202,61 @@ class CskhFirebaseMessagingService : FirebaseMessagingService() {
             .setContentIntent(contentIntent)
             .build()
 
-        NotificationManagerCompat.from(this).notify("INVOICE".hashCode(), notification)
+        NotificationManagerCompat.from(this).notify(requestCode, notification)
+    }
+
+    // type=MAINTENANCE → mở tab Cúp nước trong màn Thông báo
+    private fun showMaintenanceNotification(title: String, body: String) {
+        val channelId = "MAINTENANCE_NEWS"
+        ensureChannel(channelId, name = "Cúp nước / Bảo trì")
+
+        val intent = Intent(this, MainActivity::class.java).apply {
+            putExtra("navigate_to", "notifications_maintenance")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        }
+        val flags = (PendingIntent.FLAG_UPDATE_CURRENT or
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
+        val requestCode = System.currentTimeMillis().toInt()
+        val contentIntent = PendingIntent.getActivity(this, requestCode, intent, flags)
+
+        val notification = NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(contentIntent)
+            .build()
+
+        NotificationManagerCompat.from(this).notify(requestCode, notification)
+    }
+
+    // type=NOTIFICATION → mở tab Nổi bật trong màn Thông báo
+    private fun showGeneralNewsNotification(title: String, body: String) {
+        val channelId = "GENERAL_NEWS"
+        ensureChannel(channelId, name = "Tin nổi bật")
+
+        val intent = Intent(this, MainActivity::class.java).apply {
+            putExtra("navigate_to", "notifications_featured")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+        }
+        val flags = (PendingIntent.FLAG_UPDATE_CURRENT or
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) PendingIntent.FLAG_IMMUTABLE else 0)
+        val requestCode = System.currentTimeMillis().toInt()
+        val contentIntent = PendingIntent.getActivity(this, requestCode, intent, flags)
+
+        val notification = NotificationCompat.Builder(this, channelId)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .setContentIntent(contentIntent)
+            .build()
+
+        NotificationManagerCompat.from(this).notify(requestCode, notification)
     }
 
     private fun ensureChannel(channelId: String, name: String) {
