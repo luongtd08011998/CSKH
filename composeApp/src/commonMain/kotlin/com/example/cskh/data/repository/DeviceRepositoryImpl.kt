@@ -3,6 +3,7 @@ package com.example.cskh.data.repository
 import com.example.cskh.data.remote.dto.DeviceRegisterRequestDto
 import com.example.cskh.data.remote.dto.DeviceUnregisterRequestDto
 import com.example.cskh.domain.repository.DeviceRepository
+import com.example.cskh.getPlatform
 import com.example.cskh.util.normalizeApiBaseUrl
 import io.ktor.client.HttpClient
 import io.ktor.client.request.header
@@ -26,7 +27,7 @@ class DeviceRepositoryImpl(
         val response = client.post(url) {
             contentType(ContentType.Application.Json)
             header(HttpHeaders.Authorization, "Bearer $accessToken")
-            setBody(DeviceRegisterRequestDto(deviceToken = deviceToken))
+            setBody(DeviceRegisterRequestDto(deviceToken = deviceToken, platform = getPlatform().platformType))
         }
         if (response.status.value !in 200..299) {
             val text = runCatching { response.bodyAsText() }.getOrNull()

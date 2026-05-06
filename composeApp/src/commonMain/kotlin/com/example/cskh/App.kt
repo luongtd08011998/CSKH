@@ -57,6 +57,7 @@ fun App(
     pendingArticleTitle: String? = null,
     pendingArticleContent: String? = null,
     pendingFeedbackId: Long? = null,
+    pendingInvoiceId: Long? = null,
     pendingNavigateTo: String? = null,
     onNavigationHandled: () -> Unit = {},
 ) {
@@ -75,6 +76,7 @@ fun App(
                     pendingArticleTitle = pendingArticleTitle,
                     pendingArticleContent = pendingArticleContent,
                     pendingFeedbackId = pendingFeedbackId,
+                    pendingInvoiceId = pendingInvoiceId,
                     pendingNavigateTo = pendingNavigateTo,
                     onNavigationHandled = onNavigationHandled,
                 )
@@ -88,6 +90,7 @@ private fun MainNavHost(
     pendingArticleTitle: String? = null,
     pendingArticleContent: String? = null,
     pendingFeedbackId: Long? = null,
+    pendingInvoiceId: Long? = null,
     pendingNavigateTo: String? = null,
     onNavigationHandled: () -> Unit = {},
 ) {
@@ -131,7 +134,15 @@ private fun MainNavHost(
         }
     }
 
-    // Hóa đơn / Thanh toán: tap push → mở màn hình Danh sách Thông báo, Tab Hóa đơn
+    // Hóa đơn: tap push có invoiceId → mở trực tiếp chi tiết hóa đơn
+    LaunchedEffect(pendingInvoiceId) {
+        if (pendingInvoiceId != null && pendingInvoiceId > 0) {
+            navController.navigate(Screen.InvoiceDetail(pendingInvoiceId))
+            onNavigationHandled()
+        }
+    }
+
+    // Hóa đơn / Thanh toán: tap push không có invoiceId → mở màn hình Danh sách Thông báo, Tab Hóa đơn
     LaunchedEffect(pendingNavigateTo) {
         if (!pendingNavigateTo.isNullOrBlank()) {
             // Tăng delay để chắc chắn NavHost đã ổn định startDestination

@@ -62,7 +62,8 @@ class CskhFirebaseMessagingService : FirebaseMessagingService() {
 
         // Spec: type=INVOICE hoặc PAYMENT → deep link vào màn hình Hóa đơn
         if (type.equals("INVOICE", ignoreCase = true) || type.equals("PAYMENT", ignoreCase = true)) {
-            showInvoiceNotification(title = title, body = body)
+            val invoiceId = referenceId.toLongOrNull()
+            showInvoiceNotification(title = title, body = body, invoiceId = invoiceId)
             return
         }
 
@@ -173,13 +174,16 @@ class CskhFirebaseMessagingService : FirebaseMessagingService() {
         NotificationManagerCompat.from(this).notify(requestCode, notification)
     }
 
-    // Hóa đơn mới / Thanh toán thành công → mở màn hình Danh sách Hóa đơn
-    private fun showInvoiceNotification(title: String, body: String) {
+    // Hóa đơn mới / Thanh toán thành công → mở màn hình Danh sách Hóa đơn hoặc Chi tiết hóa đơn
+    private fun showInvoiceNotification(title: String, body: String, invoiceId: Long? = null) {
         val channelId = "INVOICE_BILLING"
         ensureChannel(channelId, name = "Hóa đơn tiền nước")
 
         val intent = Intent(this, MainActivity::class.java).apply {
             putExtra("navigate_to", "notifications_billing")
+            if (invoiceId != null) {
+                putExtra("invoice_id", invoiceId)
+            }
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
         }
         val flags = (PendingIntent.FLAG_UPDATE_CURRENT or

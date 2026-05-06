@@ -38,7 +38,9 @@ class CustomerProfileViewModel(
     }
 
     fun logout(onLoggedOut: () -> Unit) {
-        val baseUrl = defaultDevMachineApiBaseUrl(CompanyBranding.DEV_API_PORT)
+        val baseUrl = formPreferences.getBaseUrl().ifBlank {
+            defaultDevMachineApiBaseUrl(CompanyBranding.DEV_API_PORT)
+        }
         viewModelScope.launch {
             notificationBadgeStore.clear()
             tokenRefresh.logout(baseUrl)

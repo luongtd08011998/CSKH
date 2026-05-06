@@ -35,6 +35,7 @@ import com.example.cskh.domain.usecase.GetNotificationsUseCase
 import com.example.cskh.domain.usecase.LoginUseCase
 import com.example.cskh.domain.usecase.LogoutUseCase
 import com.example.cskh.domain.usecase.MarkNotificationsReadUseCase
+import com.example.cskh.domain.usecase.BackfillReferenceIdUseCase
 import com.example.cskh.domain.usecase.RefreshTokenUseCase
 import com.example.cskh.domain.usecase.RegisterFcmDeviceUseCase
 import com.example.cskh.domain.usecase.UnregisterFcmDeviceUseCase
@@ -103,6 +104,7 @@ val appModule = module {
     single<FeaturedArticleRepository> { FeaturedArticleRepositoryImpl(get()) }
     single { GetFeaturedArticlesUseCase(get()) }
     single { MarkNotificationsReadUseCase(get()) }
+    single { BackfillReferenceIdUseCase(get()) }
     single { NotificationBadgeStore(get(), get()) }
     single { CreateFeedbackUseCase(get(), get()) }
     single { GetFeedbacksUseCase(get(), get()) }
@@ -110,7 +112,7 @@ val appModule = module {
     viewModel { LoginViewModel(get(), get(), get(), get()) }
     viewModel { HomeViewModel(get(), get(), get(), get(), get(), get()) }
     viewModel { InvoiceListViewModel(get(), get(), get()) }
-    viewModel { NotificationListViewModel(get(), get(), get(), get(), get(), get(), get()) }
+    viewModel { NotificationListViewModel(get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { CustomerProfileViewModel(get(), get(), get(), get()) }
     viewModel { PhanAnhViewModel(get(), get(), get()) }
     viewModel { PhanAnhListViewModel(get()) }

@@ -16,6 +16,7 @@ class MainActivity : ComponentActivity() {
     private var pendingArticleTitle by mutableStateOf<String?>(null)
     private var pendingArticleContent by mutableStateOf<String?>(null)
     private var pendingFeedbackId by mutableStateOf<Long?>(null)
+    private var pendingInvoiceId by mutableStateOf<Long?>(null)
     private var pendingNavigateTo by mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -28,6 +29,7 @@ class MainActivity : ComponentActivity() {
         pendingArticleTitle = title
         pendingArticleContent = content
         pendingFeedbackId = extractFeedbackId(intent)
+        pendingInvoiceId = extractInvoiceId(intent)
         pendingNavigateTo = extractNavigateTo(intent)
 
         setContent {
@@ -35,11 +37,13 @@ class MainActivity : ComponentActivity() {
                 pendingArticleTitle = pendingArticleTitle,
                 pendingArticleContent = pendingArticleContent,
                 pendingFeedbackId = pendingFeedbackId,
+                pendingInvoiceId = pendingInvoiceId,
                 pendingNavigateTo = pendingNavigateTo,
                 onNavigationHandled = {
                     pendingArticleTitle = null
                     pendingArticleContent = null
                     pendingFeedbackId = null
+                    pendingInvoiceId = null
                     pendingNavigateTo = null
                 }
             )
@@ -57,6 +61,7 @@ class MainActivity : ComponentActivity() {
         pendingArticleTitle = title
         pendingArticleContent = content
         pendingFeedbackId = extractFeedbackId(intent)
+        pendingInvoiceId = extractInvoiceId(intent)
         pendingNavigateTo = extractNavigateTo(intent)
     }
 
@@ -75,6 +80,7 @@ class MainActivity : ComponentActivity() {
         }
         Log.d("FCM_NAV", "extractNavigateTo = ${extractNavigateTo(intent)}")
         Log.d("FCM_NAV", "extractFeedbackId = ${extractFeedbackId(intent)}")
+        Log.d("FCM_NAV", "extractInvoiceId = ${extractInvoiceId(intent)}")
     }
 
     private fun extractArticle(intent: android.content.Intent?): Pair<String?, String?> {
@@ -92,6 +98,17 @@ class MainActivity : ComponentActivity() {
         // Trường hợp 2: Mở từ hệ thống Android - chỉ dùng referenceId khi type=FEEDBACK
         val type = intent?.getStringExtra("type") ?: ""
         if (!type.equals("FEEDBACK", ignoreCase = true)) return null
+
+        val fromSystem = intent?.getStringExtra("referenceId")
+        return fromSystem?.trim()?.toLongOrNull()?.takeIf { it > 0 }
+    }
+
+    private fun extractInvoiceId(intent: android.content.Intent?): Long? {
+        val fromApp = intent?.getLongExtra("invoice_id", -1L)?.takeIf { it > 0 }
+        if (fromApp != null) return fromApp
+
+        val type = intent?.getStringExtra("type") ?: ""
+        if (!type.equals("INVOICE", ignoreCase = true) && !type.equals("PAYMENT", ignoreCase = true)) return null
 
         val fromSystem = intent?.getStringExtra("referenceId")
         return fromSystem?.trim()?.toLongOrNull()?.takeIf { it > 0 }

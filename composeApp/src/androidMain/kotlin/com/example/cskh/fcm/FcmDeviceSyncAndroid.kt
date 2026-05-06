@@ -39,7 +39,10 @@ class FcmDeviceSyncAndroid(
             if (fcmToken.isBlank()) return@withContext
             if (sessionManager.accessToken.isNullOrBlank()) return@withContext
             val base = resolveBaseUrl()
-            runCatching { registerFcmDevice.register(base, fcmToken) }
+            val result = runCatching { registerFcmDevice.register(base, fcmToken) }
+            result.exceptionOrNull()?.let { e ->
+                android.util.Log.e("FCM_REG", "register failed: ${e.message}", e)
+            }
         }
     }
 
@@ -48,7 +51,10 @@ class FcmDeviceSyncAndroid(
         val fcm = runCatching { fetchFcmToken() }.getOrNull() ?: return@withContext
         if (fcm.isBlank()) return@withContext
         val base = resolveBaseUrl()
-        runCatching { unregisterFcmDevice.unregister(base, fcm) }
+        val result = runCatching { unregisterFcmDevice.unregister(base, fcm) }
+        result.exceptionOrNull()?.let { e ->
+            android.util.Log.e("FCM_UNREG", "unregister failed: ${e.message}", e)
+        }
     }
 
     private suspend fun fetchFcmToken(): String = suspendCancellableCoroutine { cont ->

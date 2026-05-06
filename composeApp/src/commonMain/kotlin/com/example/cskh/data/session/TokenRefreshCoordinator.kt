@@ -52,7 +52,13 @@ class TokenRefreshCoordinator(
 
     suspend fun logout(baseUrl: String) {
         runCatching { fcmDeviceSync.unregisterIfLoggedIn() }
-        runCatching { logoutUseCase(baseUrl) } // best-effort
+            .onFailure { e ->
+                println("[LOGOUT] unregister device failed: ${e.message}")
+            }
+        runCatching { logoutUseCase(baseUrl) }
+            .onFailure { e ->
+                println("[LOGOUT] logout API failed: ${e.message}")
+            }
         clearLocalSession()
     }
 

@@ -10,6 +10,7 @@ import com.example.cskh.domain.usecase.GetMaintenanceArticlesUseCase
 import com.example.cskh.domain.usecase.GetFeaturedArticlesUseCase
 import com.example.cskh.domain.usecase.GetNotificationsUseCase
 import com.example.cskh.domain.usecase.MarkNotificationsReadUseCase
+import com.example.cskh.domain.usecase.BackfillReferenceIdUseCase
 import com.example.cskh.domain.usecase.UserFormPreferencesUseCase
 import com.example.cskh.presentation.NotificationBadgeStore
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -47,6 +48,7 @@ data class FeaturedUiState(
 class NotificationListViewModel(
     private val getNotifications: GetNotificationsUseCase,
     private val markRead: MarkNotificationsReadUseCase,
+    private val backfillReferenceId: BackfillReferenceIdUseCase,
     private val formPreferences: UserFormPreferencesUseCase,
     private val notificationBadgeStore: NotificationBadgeStore,
     private val getMaintenanceArticles: GetMaintenanceArticlesUseCase,
@@ -77,6 +79,7 @@ class NotificationListViewModel(
         }
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
+            backfillReferenceId(baseUrl)
             val result = getNotifications(baseUrl)
 
             if (isUnauthorized(result)) {
@@ -92,6 +95,9 @@ class NotificationListViewModel(
                 onSuccess = { items ->
                     _state.update { it.copy(items = items, isLoading = false) }
                     notificationBadgeStore.syncFromItems(items)
+                    items.filter { it.type.uppercase() in listOf("INVOICE", "PAYMENT", "BILLING") }.forEach {
+                        println("[NOTIF_REF] id=${it.id}, type=${it.type}, referenceId=${it.referenceId}")
+                    }
                 },
                 onFailure = { e ->
                     _state.update {
