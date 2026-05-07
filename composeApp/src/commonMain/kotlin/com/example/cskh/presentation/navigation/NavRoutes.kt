@@ -35,4 +35,7 @@ sealed interface Screen {
 
     @Serializable
     data class ArticleDetail(val title: String, val content: String) : Screen
+
+    @Serializable
+    data object Register : Screen
 }

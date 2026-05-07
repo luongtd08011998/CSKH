@@ -7,11 +7,13 @@ import com.example.cskh.domain.model.InvoiceDetail
 import com.example.cskh.domain.usecase.DownloadAndSaveEInvoiceZipUseCase
 import com.example.cskh.domain.usecase.GetInvoiceDetailUseCase
 import com.example.cskh.domain.usecase.UserFormPreferencesUseCase
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class InvoiceDetailUiState(
     val detail: InvoiceDetail? = null,
@@ -47,7 +49,7 @@ class InvoiceDetailViewModel(
         }
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
-            val result = getDetail(baseUrl, invoiceId)
+            val result = withContext(Dispatchers.Default) { getDetail(baseUrl, invoiceId) }
             
             if (isUnauthorized(result)) {
                 if (!tokenRefresh.tryRefresh()) {
@@ -93,7 +95,7 @@ class InvoiceDetailViewModel(
                     eInvoiceMessage = null,
                 )
             }
-            val result = downloadAndSaveEInvoiceZip(baseUrl, invoiceId)
+            val result = withContext(Dispatchers.Default) { downloadAndSaveEInvoiceZip(baseUrl, invoiceId) }
 
             if (isUnauthorized(result)) {
                 if (!tokenRefresh.tryRefresh()) {

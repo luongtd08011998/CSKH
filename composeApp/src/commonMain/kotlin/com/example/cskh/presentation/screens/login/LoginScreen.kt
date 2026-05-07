@@ -62,7 +62,6 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -99,11 +98,11 @@ private val buttonDisabledBrush = Brush.horizontalGradient(
 @Composable
 fun LoginScreen(
     onLoggedIn: () -> Unit,
+    onNavigateRegister: () -> Unit = {},
     viewModel: LoginViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
     val scrollState = rememberScrollState()
-    val uriHandler = LocalUriHandler.current
     var phoneVisible by remember { mutableStateOf(false) }
 
     val primaryBlue = Color(0xFF1976D2)
@@ -316,10 +315,10 @@ fun LoginScreen(
                             )
                         }
                         TextButton(
-                            onClick = { uriHandler.openUri("tel:${CompanyBranding.PHONE_TEL}") },
+                            onClick = onNavigateRegister,
                         ) {
                             Text(
-                                "Quên mật khẩu?",
+                                "Đăng ký lắp đặt trực tuyến",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = primaryBlue,
                             )

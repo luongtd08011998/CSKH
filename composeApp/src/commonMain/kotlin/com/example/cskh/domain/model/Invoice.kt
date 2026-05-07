@@ -11,6 +11,7 @@ data class InvoiceSummary(
     val id: Long,
     val digiCode: String,
     val customerName: String,
+    val yearMonth: String = "",
     val amount: Double,
     val envFee: Double,
     val taxFee: Double,

@@ -11,6 +11,7 @@ import com.example.cskh.data.repository.InvoiceRepositoryImpl
 import com.example.cskh.data.repository.MaintenanceArticleRepositoryImpl
 import com.example.cskh.data.repository.FeaturedArticleRepositoryImpl
 import com.example.cskh.data.repository.NotificationRepositoryImpl
+import com.example.cskh.data.repository.RegisterRepositoryImpl
 import com.example.cskh.data.session.SessionManager
 import com.example.cskh.data.settings.UserPreferences
 import com.example.cskh.domain.preferences.UserFormStore
@@ -20,6 +21,7 @@ import com.example.cskh.domain.repository.DeviceRepository
 import com.example.cskh.domain.repository.FeedbackRepository
 import com.example.cskh.domain.repository.InvoiceRepository
 import com.example.cskh.domain.repository.NotificationRepository
+import com.example.cskh.domain.repository.RegisterRepository
 import com.example.cskh.domain.repository.MaintenanceArticleRepository
 import com.example.cskh.domain.repository.FeaturedArticleRepository
 import com.example.cskh.domain.usecase.DownloadAndSaveEInvoiceZipUseCase
@@ -53,6 +55,7 @@ import com.example.cskh.presentation.screens.invoices.InvoiceListViewModel
 import com.example.cskh.presentation.screens.login.LoginViewModel
 import com.example.cskh.presentation.NotificationBadgeStore
 import com.example.cskh.presentation.screens.notifications.NotificationListViewModel
+import com.example.cskh.presentation.screens.register.RegisterViewModel
 import com.example.cskh.presentation.screens.phananh.PhanAnhDetailViewModel
 import com.example.cskh.presentation.screens.phananh.PhanAnhListViewModel
 import com.example.cskh.presentation.screens.phananh.PhanAnhViewModel
@@ -96,6 +99,7 @@ val appModule = module {
     single<DeviceRepository> { DeviceRepositoryImpl(get()) }
     single<NotificationRepository> { NotificationRepositoryImpl(get(), get()) }
     single<FeedbackRepository> { FeedbackRepositoryImpl(get(), get()) }
+    single<RegisterRepository> { RegisterRepositoryImpl() }
     single { RegisterFcmDeviceUseCase(get(), get()) }
     single { UnregisterFcmDeviceUseCase(get(), get()) }
     single { GetNotificationsUseCase(get()) }
@@ -115,6 +119,7 @@ val appModule = module {
     viewModel { NotificationListViewModel(get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { CustomerProfileViewModel(get(), get(), get(), get()) }
     viewModel { PhanAnhViewModel(get(), get(), get()) }
+    viewModel { RegisterViewModel(get()) }
     viewModel { PhanAnhListViewModel(get()) }
     viewModel { (id: Long) -> PhanAnhDetailViewModel(get(), get(), id) }
     viewModel { (id: Long) -> InvoiceDetailViewModel(get(), get(), get(), get(), id) }

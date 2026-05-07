@@ -3,24 +3,29 @@ package com.example.cskh.presentation.screens.notifications
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cskh.data.session.TokenRefreshCoordinator
+import com.example.cskh.domain.model.InvoiceSummary
 import com.example.cskh.domain.model.MaintenanceArticle
 import com.example.cskh.domain.model.NotificationItem
 import com.example.cskh.domain.model.PageMeta
 import com.example.cskh.domain.usecase.GetMaintenanceArticlesUseCase
 import com.example.cskh.domain.usecase.GetFeaturedArticlesUseCase
+import com.example.cskh.domain.usecase.GetInvoicesUseCase
 import com.example.cskh.domain.usecase.GetNotificationsUseCase
 import com.example.cskh.domain.usecase.MarkNotificationsReadUseCase
-import com.example.cskh.domain.usecase.BackfillReferenceIdUseCase
 import com.example.cskh.domain.usecase.UserFormPreferencesUseCase
 import com.example.cskh.presentation.NotificationBadgeStore
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class NotificationListUiState(
     val items: List<NotificationItem> = emptyList(),
+    val invoices: List<InvoiceSummary> = emptyList(),
     val isLoading: Boolean = false,
     val isMarkingRead: Boolean = false,
     val errorMessage: String? = null,
@@ -48,12 +53,12 @@ data class FeaturedUiState(
 class NotificationListViewModel(
     private val getNotifications: GetNotificationsUseCase,
     private val markRead: MarkNotificationsReadUseCase,
-    private val backfillReferenceId: BackfillReferenceIdUseCase,
     private val formPreferences: UserFormPreferencesUseCase,
     private val notificationBadgeStore: NotificationBadgeStore,
     private val getMaintenanceArticles: GetMaintenanceArticlesUseCase,
     private val getFeaturedArticles: GetFeaturedArticlesUseCase,
     private val tokenRefresh: TokenRefreshCoordinator,
+    private val getInvoices: GetInvoicesUseCase,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(NotificationListUiState())
@@ -79,8 +84,10 @@ class NotificationListViewModel(
         }
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
-            backfillReferenceId(baseUrl)
-            val result = getNotifications(baseUrl)
+            val invoicesDeferred = async(Dispatchers.Default) { getInvoices(baseUrl, 1, 20) }
+            val result = withContext(Dispatchers.Default) {
+                getNotifications(baseUrl)
+            }
 
             if (isUnauthorized(result)) {
                 if (!tokenRefresh.tryRefresh()) {
@@ -93,11 +100,10 @@ class NotificationListViewModel(
 
             result.fold(
                 onSuccess = { items ->
-                    _state.update { it.copy(items = items, isLoading = false) }
+                    val invoices = invoicesDeferred.await().getOrNull()?.items.orEmpty()
+
+                    _state.update { it.copy(items = items, invoices = invoices, isLoading = false) }
                     notificationBadgeStore.syncFromItems(items)
-                    items.filter { it.type.uppercase() in listOf("INVOICE", "PAYMENT", "BILLING") }.forEach {
-                        println("[NOTIF_REF] id=${it.id}, type=${it.type}, referenceId=${it.referenceId}")
-                    }
                 },
                 onFailure = { e ->
                     _state.update {
@@ -116,7 +122,7 @@ class NotificationListViewModel(
         if (baseUrl.isBlank()) return
         viewModelScope.launch {
             _maintenanceState.update { it.copy(isLoading = true, errorMessage = null, currentPage = 0) }
-            val result = getMaintenanceArticles(baseUrl, page = 0, size = 10)
+            val result = withContext(Dispatchers.Default) { getMaintenanceArticles(baseUrl, page = 0, size = 10) }
 
             if (isUnauthorized(result)) {
                 if (!tokenRefresh.tryRefresh()) {
@@ -152,7 +158,7 @@ class NotificationListViewModel(
         if (baseUrl.isBlank()) return
         viewModelScope.launch {
             _maintenanceState.update { it.copy(isLoadingMore = true) }
-            val result = getMaintenanceArticles(baseUrl, page = nextPage, size = 10)
+            val result = withContext(Dispatchers.Default) { getMaintenanceArticles(baseUrl, page = nextPage, size = 10) }
 
             if (isUnauthorized(result)) {
                 if (!tokenRefresh.tryRefresh()) {
@@ -188,7 +194,7 @@ class NotificationListViewModel(
         if (baseUrl.isBlank()) return
         viewModelScope.launch {
             _featuredState.update { it.copy(isLoading = true, errorMessage = null, currentPage = 0) }
-            val result = getFeaturedArticles(baseUrl, page = 0, size = 10)
+            val result = withContext(Dispatchers.Default) { getFeaturedArticles(baseUrl, page = 0, size = 10) }
 
             if (isUnauthorized(result)) {
                 if (!tokenRefresh.tryRefresh()) {
@@ -224,7 +230,7 @@ class NotificationListViewModel(
         if (baseUrl.isBlank()) return
         viewModelScope.launch {
             _featuredState.update { it.copy(isLoadingMore = true) }
-            val result = getFeaturedArticles(baseUrl, page = nextPage, size = 10)
+            val result = withContext(Dispatchers.Default) { getFeaturedArticles(baseUrl, page = nextPage, size = 10) }
 
             if (isUnauthorized(result)) {
                 if (!tokenRefresh.tryRefresh()) {
@@ -277,8 +283,8 @@ class NotificationListViewModel(
         notificationBadgeStore.syncFromItems(_state.value.items)
         _state.update { it.copy(isMarkingRead = true, errorMessage = null) }
         viewModelScope.launch {
-            val resultFalse = markRead.markRead(baseUrl, ids = null, isSystem = false)
-            val resultTrue = markRead.markRead(baseUrl, ids = null, isSystem = true)
+            val resultFalse = withContext(Dispatchers.Default) { markRead.markRead(baseUrl, ids = null, isSystem = false) }
+            val resultTrue = withContext(Dispatchers.Default) { markRead.markRead(baseUrl, ids = null, isSystem = true) }
             
             // Note: If 401 here, we could also retry, but markAllRead is a fire-and-forget-ish action
             // for UI. Let's focus on main data loading for now.
@@ -318,7 +324,7 @@ class NotificationListViewModel(
         }
         viewModelScope.launch {
             _state.update { it.copy(isMarkingRead = true, errorMessage = null) }
-            val result = markRead.markRead(baseUrl, ids, isSystem)
+            val result = withContext(Dispatchers.Default) { markRead.markRead(baseUrl, ids, isSystem) }
             result.fold(
                 onSuccess = {
                     if (ids == null) {
@@ -351,4 +357,33 @@ class NotificationListViewModel(
         result.exceptionOrNull()?.message?.let {
             it.contains("401") || it.contains("UNAUTHORIZED_401") || it.contains("Chưa đăng nhập")
         } == true
+
+    /**
+     * Parse "tháng 03/2026" từ notification content → "2026-03" để match với invoice.yearMonth.
+     */
+    private fun parseMonthFromContent(content: String): String? {
+        val match = Regex("tháng\\s+(\\d{2})/(\\d{4})", RegexOption.IGNORE_CASE).find(content)
+            ?: return null
+        val month = match.groupValues[1]
+        val year = match.groupValues[2]
+        return "$year-$month"
+    }
+
+    /**
+     * Tìm đúng invoice ID dựa trên tháng từ notification content.
+     * Fallback về referenceId nếu không tìm thấy.
+     */
+    fun resolveInvoiceId(notification: NotificationItem): Long? {
+        if (notification.type.toNotificationType() != NotificationType.BILLING) {
+            return notification.referenceId
+        }
+        val targetMonth = parseMonthFromContent(notification.content) ?: return notification.referenceId
+        val invoices = _state.value.invoices
+
+        // Ưu tiên tìm invoice có yearMonth khớp chính xác
+        val matched = invoices.firstOrNull {
+            it.yearMonth.startsWith(targetMonth)
+        }
+        return matched?.id ?: notification.referenceId
+    }
 }

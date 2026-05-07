@@ -7,11 +7,13 @@ import com.example.cskh.domain.model.InvoiceSummary
 import com.example.cskh.domain.model.PageMeta
 import com.example.cskh.domain.usecase.GetInvoicesUseCase
 import com.example.cskh.domain.usecase.UserFormPreferencesUseCase
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 enum class InvoicePaymentFilter {
     All,
@@ -85,7 +87,7 @@ class InvoiceListViewModel(
             } else {
                 _state.update { it.copy(isLoading = true, errorMessage = null) }
             }
-            val result = getInvoices(baseUrl, page, PAGE_SIZE)
+            val result = withContext(Dispatchers.Default) { getInvoices(baseUrl, page, PAGE_SIZE) }
 
             // Xử lý Unauthorized (401)
             if (isUnauthorized(result)) {

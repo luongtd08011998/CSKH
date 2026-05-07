@@ -47,6 +47,7 @@ import com.example.cskh.presentation.screens.article.ArticleDetailScreen
 import com.example.cskh.presentation.screens.phananh.PhanAnhDetailScreen
 import com.example.cskh.presentation.screens.phananh.PhanAnhScreen
 import com.example.cskh.presentation.screens.static.AboutScreen
+import com.example.cskh.presentation.screens.register.RegisterScreen
 import com.example.cskh.presentation.screens.static.WaterPriceScreen
 import com.example.cskh.presentation.theme.CskhTheme
 import com.example.cskh.platform.NotificationPermissionGate
@@ -213,6 +214,9 @@ private fun MainNavHost(
                                 popUpTo<Screen.Login> { inclusive = true }
                             }
                         },
+                        onNavigateRegister = {
+                            navController.navigate(Screen.Register)
+                        },
                     )
                 }
                 composable<Screen.Home> {
@@ -307,6 +311,21 @@ private fun MainNavHost(
                         title = route.title,
                         content = route.content,
                         onBack = { navController.popBackStack() },
+                    )
+                }
+                composable<Screen.Register> {
+                    RegisterScreen(
+                        onBack = { navController.popBackStack() },
+                        onNavigateHome = {
+                            if (!sessionManager.accessToken.isNullOrBlank()) {
+                                navController.navigate(Screen.Home) {
+                                    popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                                    launchSingleTop = true
+                                }
+                            } else {
+                                navController.popBackStack()
+                            }
+                        },
                     )
                 }
             }

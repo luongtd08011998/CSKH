@@ -333,7 +333,8 @@ fun NotificationListScreen(
                                                         onNavigateFeedback(notification.referenceId)
                                                     }
                                                     notification.type.toNotificationType() == NotificationType.BILLING -> {
-                                                        onNavigateInvoices(notification.referenceId)
+                                                        val resolvedId = viewModel.resolveInvoiceId(notification)
+                                                        onNavigateInvoices(resolvedId)
                                                     }
                                                     notification.referenceId != null -> {
                                                         onNavigateArticle(notification.title, notification.content)
@@ -364,7 +365,9 @@ private fun MaintenanceTabContent(
     onRetry: () -> Unit,
     onArticleClick: (String) -> Unit,
 ) {
-    val allArticles = maintenanceState.items
+    val allArticles = remember(maintenanceState.items) {
+        maintenanceState.items.sortedByDescending { it.createdAt }
+    }
     val articles = if (searchQuery.isBlank()) allArticles else {
         allArticles.filter { it.title.contains(searchQuery, ignoreCase = true) }
     }
