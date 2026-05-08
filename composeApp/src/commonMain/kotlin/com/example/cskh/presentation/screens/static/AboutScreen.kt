@@ -78,7 +78,7 @@ private val pageBgBottom = Color(0xFFF0F0F0)
 fun AboutScreen(onBack: () -> Unit) {
     val uriHandler = LocalUriHandler.current
     val clipboard = LocalClipboardManager.current
-    val mapsUrl = "https://www.google.com/maps/search?q=" + CompanyAddress.replace(" ", "+")
+    val mapsUrl = "https://maps.app.goo.gl/93xk9CZ2Xgp5GHhp7"
 
     Scaffold(
         topBar = {

@@ -90,9 +90,9 @@ private val warnOrangeBg = Color(0xFFFFF3E0)
 private val warnOrangeBorder = Color(0xFFFFCC80)
 
 private const val VietQrBankId = "970415"
-private const val VietQrAccountNo = "0359423852"
-private const val VietQrTemplate = "print"
-private const val VietQrAccountName = "TRAN DUC LUONG"
+private const val VietQrAccountNo = "113601145666"
+private const val VietQrTemplate = "J01ctIp"
+private const val VietQrAccountName = "CONG TY TNHH CAP NUOC TOC TIEN"
 
 private enum class InvoicePaymentKind { Paid, Unpaid, Other }
 
@@ -151,6 +151,54 @@ private fun InvoiceDetail.waterUsedM3(): Int {
     val o = oldVal ?: 0
     val n = newVal ?: 0
     return (n - o).coerceAtLeast(0)
+}
+
+private val DAYS_IN_MONTH = intArrayOf(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+
+private fun isLeapYear(y: Int) = (y % 4 == 0 && y % 100 != 0) || (y % 400 == 0)
+
+private fun daysIn(y: Int, m: Int) = if (m == 2 && isLeapYear(y)) 29 else DAYS_IN_MONTH[m - 1]
+
+private fun String?.toDateDisplay(): String {
+    val s = this?.trim().orEmpty()
+    if (s.isBlank()) return "—"
+    val d = s.take(10)
+    return if (Regex("\\d{4}-\\d{2}-\\d{2}").matches(d)) {
+        "${d.substring(8, 10)}/${d.substring(5, 7)}/${d.substring(0, 4)}"
+    } else if (Regex("\\d{8}").matches(s.take(8))) {
+        "${s.substring(6, 8)}/${s.substring(4, 6)}/${s.substring(0, 4)}"
+    } else s
+}
+
+private fun String?.addDays(n: Int): String? {
+    val s = this?.trim().orEmpty()
+    if (s.isBlank()) return null
+    val d = s.take(10)
+    var year: Int
+    var month: Int
+    var day: Int
+    if (Regex("\\d{4}-\\d{2}-\\d{2}").matches(d)) {
+        year = d.substring(0, 4).toInt()
+        month = d.substring(5, 7).toInt()
+        day = d.substring(8, 10).toInt() + n
+    } else if (Regex("\\d{8}").matches(s.take(8))) {
+        year = s.substring(0, 4).toInt()
+        month = s.substring(4, 6).toInt()
+        day = s.substring(6, 8).toInt() + n
+    } else return null
+    while (day > daysIn(year, month)) {
+        day -= daysIn(year, month)
+        month++
+        if (month > 12) { month = 1; year++ }
+    }
+    return "%02d/%02d/%04d".format(day, month, year)
+}
+
+private fun InvoiceDetail.dueDate(): String {
+    createdDate.addDays(7)?.let { return it }
+    return endDate?.takeIf { it.isNotBlank() }?.toDateDisplay()
+        ?: startDate?.takeIf { it.isNotBlank() }?.toDateDisplay()
+        ?: "—"
 }
 
 @Composable
@@ -902,15 +950,15 @@ private fun PaymentDatesCard(d: InvoiceDetail) {
                     modifier = Modifier.weight(1f),
                     bg = Color(0xFFF5F5F5),
                     label = "Ngày phát hành",
-                    value = d.createdDate?.takeIf { it.isNotBlank() } ?: "—",
+                    value = d.createdDate.toDateDisplay(),
                     valueAccent = Color(0xFF212121),
                 )
                 DateBox(
                     modifier = Modifier.weight(1f),
                     bg = Color(0xFFFFF3E0),
                     label = "Hạn thanh toán",
-                    value = d.endDate?.takeIf { it.isNotBlank() } ?: d.startDate?.takeIf { it.isNotBlank() } ?: "—",
                     valueAccent = Color(0xFFE65100),
+                    subLabel = "7 ngày kể từ ngày phát hành hóa đơn"
                 )
             }
         }
@@ -922,8 +970,9 @@ private fun DateBox(
     modifier: Modifier,
     bg: Color,
     label: String,
-    value: String,
+    value: String? = null,
     valueAccent: Color,
+    subLabel: String? = null,
 ) {
     Column(
         modifier = modifier
@@ -932,11 +981,25 @@ private fun DateBox(
     ) {
         Text(label, style = MaterialTheme.typography.bodySmall, color = Color(0xFF757575))
         Spacer(modifier = Modifier.height(4.dp))
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
-            color = valueAccent,
-        )
+        value?.let {
+            Text(
+                text = it,
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                color = valueAccent,
+            )
+        }
+        subLabel?.let {
+            if (value != null) Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = it,
+                style = if (value == null) {
+                    MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium)
+                } else {
+                    MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Normal)
+                },
+                color = valueAccent.copy(alpha = 0.85f),
+            )
+        }
     }
 }
 
@@ -1011,7 +1074,7 @@ private fun PaidSuccessCard() {
 
 @Composable
 private fun UnpaidWarningCard(d: InvoiceDetail) {
-    val due = d.endDate?.takeIf { it.isNotBlank() } ?: d.startDate?.takeIf { it.isNotBlank() } ?: "—"
+    val due = d.dueDate()
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -1031,8 +1094,9 @@ private fun UnpaidWarningCard(d: InvoiceDetail) {
                     color = Color(0xFFE65100),
                 )
                 Spacer(modifier = Modifier.height(4.dp))
+                val dueSuffix = if (due != "—") " ($due)" else ""
                 Text(
-                    text = "Vui lòng thanh toán trước ngày $due để tránh bị cắt nước",
+                    text = "Vui lòng thanh toán đúng hạn để tránh bị cắt nước.",
                     style = MaterialTheme.typography.bodySmall,
                     color = Color(0xFFBF360C),
                 )
