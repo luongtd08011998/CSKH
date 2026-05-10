@@ -98,7 +98,7 @@ fun SplashScreen(onFinished: () -> Unit) {
             Spacer(Modifier.height(24.dp))
 
             Text(
-                text = "Công ty TNHH MTV",
+                text = "Công ty TNHH ",
                 style = MaterialTheme.typography.labelLarge.copy(
                     color = Color(0xFF5B8DB8),
                     letterSpacing = 1.2.sp,
@@ -109,7 +109,7 @@ fun SplashScreen(onFinished: () -> Unit) {
             Spacer(Modifier.height(4.dp))
 
             Text(
-                text = "CẤP NƯỚC",
+                text = "CẤP NƯỚC TÓC TIÊN",
                 style = MaterialTheme.typography.headlineSmall.copy(
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFF0B5D99),

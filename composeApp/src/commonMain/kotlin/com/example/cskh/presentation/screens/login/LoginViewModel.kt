@@ -19,6 +19,7 @@ data class LoginUiState(
     val phone: String = "",
     val rememberLogin: Boolean = true,
     val isLoading: Boolean = false,
+    val isSlowConnection: Boolean = false,
     val errorMessage: String? = null,
 )
 
@@ -62,8 +63,17 @@ class LoginViewModel(
             return
         }
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true, errorMessage = null) }
+            _state.update { it.copy(isLoading = true, isSlowConnection = false, errorMessage = null) }
+            
+            // Timeout detector: show warning after 5s
+            val timeoutJob = launch {
+                kotlinx.coroutines.delay(5000)
+                _state.update { it.copy(isSlowConnection = true) }
+            }
+
             val result = loginUseCase(baseUrl, s.digiCode.trim(), s.phone.trim())
+            timeoutJob.cancel()
+
             result.fold(
                 onSuccess = { (accessToken, refreshToken) ->
                     if (s.rememberLogin) {
@@ -71,18 +81,20 @@ class LoginViewModel(
                     } else {
                         formPreferences.saveForm("", "", baseUrl)
                     }
-                    // Lưu cả hai token vào persistent storage
                     formPreferences.saveAccessToken(accessToken)
                     formPreferences.saveRefreshToken(refreshToken)
-                    // Cập nhật session in-memory
                     sessionManager.setToken(accessToken, refreshToken)
                     fcmDeviceSync.registerIfLoggedIn()
-                    _state.update { it.copy(isLoading = false) }
+                    _state.update { it.copy(isLoading = false, isSlowConnection = false) }
                     onSuccess()
                 },
                 onFailure = { e ->
                     _state.update {
-                        it.copy(isLoading = false, errorMessage = e.message ?: "Đăng nhập thất bại")
+                        it.copy(
+                            isLoading = false, 
+                            isSlowConnection = false,
+                            errorMessage = e.message ?: "Đăng nhập thất bại"
+                        )
                     }
                 },
             )

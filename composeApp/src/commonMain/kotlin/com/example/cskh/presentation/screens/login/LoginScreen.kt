@@ -62,6 +62,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -69,10 +70,12 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.cskh.presentation.CompanyBranding
+import com.example.cskh.presentation.components.AuthLoadingOverlay
 import org.koin.compose.viewmodel.koinViewModel
 import org.jetbrains.compose.resources.painterResource
 import cskh.composeapp.generated.resources.Res
 import cskh.composeapp.generated.resources.logocty1
+import androidx.compose.animation.core.animateFloatAsState
 
 private val bgGradientTop = Color(0xFFE3F2FD)
 private val bgGradientMid = Color(0xFFFFFFFF)
@@ -108,6 +111,13 @@ fun LoginScreen(
     val primaryBlue = Color(0xFF1976D2)
     val fieldShape = RoundedCornerShape(16.dp)
     val cardShape = RoundedCornerShape(28.dp)
+
+    // Animation cho card khi đang loading
+    val cardScale by animateFloatAsState(
+        targetValue = if (state.isLoading) 0.97f else 1f,
+        animationSpec = tween(300),
+        label = "cardScale",
+    )
 
     val infinite = rememberInfiniteTransition(label = "pulse")
     val pulseAlpha by infinite.animateFloat(
@@ -195,10 +205,19 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(36.dp))
 
             Surface(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .graphicsLayer(
+                        scaleX = cardScale,
+                        scaleY = cardScale,
+                        rotationZ = if (state.isLoading) 0.5f else 0f
+                    )
+                    .shadow(
+                        elevation = if (state.isLoading) 4.dp else 12.dp,
+                        shape = cardShape,
+                    ),
                 shape = cardShape,
                 color = Color.White,
-                shadowElevation = 12.dp,
             ) {
                 Column(
                     modifier = Modifier.padding(horizontal = 24.dp, vertical = 22.dp),
@@ -424,5 +443,11 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(12.dp))
         }
+
+        // ── Giai đoạn Loading Đăng nhập ──
+        AuthLoadingOverlay(
+            isLoading = state.isLoading,
+            isSlowConnection = state.isSlowConnection,
+        )
     }
 }

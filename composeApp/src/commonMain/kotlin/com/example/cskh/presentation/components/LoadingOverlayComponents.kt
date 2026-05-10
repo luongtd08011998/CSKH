@@ -6,16 +6,22 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.SignalWifiOff
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -29,6 +35,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.style.TextAlign
 
 // ──────────────────────────────────────────────────────────────
 // Màu sắc đồng bộ theme ngành nước
@@ -130,12 +137,14 @@ private fun SlowConnectionBar(onRetry: () -> Unit) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Icon(
-                    imageVector = Icons.Filled.SignalWifiOff,
-                    contentDescription = "Mất kết nối",
-                    tint = WarningAmber,
-                    modifier = Modifier.size(20.dp),
-                )
+                Box(
+                    modifier = Modifier
+                        .size(24.dp)
+                        .background(WarningAmber, shape = CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("!", color = Color.White, style = MaterialTheme.typography.labelSmall)
+                }
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "Kết nối máy chủ chậm",
@@ -165,6 +174,90 @@ private fun SlowConnectionBar(onRetry: () -> Unit) {
                     text = "Thử lại",
                     style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Bold),
                 )
+            }
+        }
+    }
+}
+
+// ──────────────────────────────────────────────────────────────
+// AuthLoadingOverlay – Phục vụ cho màn hình Đăng nhập
+// ──────────────────────────────────────────────────────────────
+
+/**
+ * Overlay hiển thị khi đang xác thực đăng nhập.
+ * Hiển thị full màn hình với hiệu ứng mờ nhẹ và card thông tin ở giữa.
+ */
+@Composable
+fun AuthLoadingOverlay(
+    isLoading: Boolean,
+    isSlowConnection: Boolean,
+) {
+    if (!isLoading) return
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.4f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Surface(
+            modifier = Modifier
+                .width(280.dp)
+                .padding(16.dp),
+            shape = RoundedCornerShape(24.dp),
+            color = Color.White,
+            shadowElevation = 16.dp,
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                if (isSlowConnection) {
+                    // Diagnostic: Use a simple box instead of an icon to rule out resource ID issues
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .background(WarningAmber, shape = CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("!", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                    Text(
+                        text = "Kết nối chậm…",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = WarningAmber,
+                        ),
+                        textAlign = TextAlign.Center,
+                    )
+                    Text(
+                        text = "Vui lòng đợi trong giây lát, hệ thống đang nỗ lực kết nối.",
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Center,
+                        color = Color.Gray,
+                    )
+                } else {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(48.dp),
+                        color = WaterBlue,
+                        strokeWidth = 4.dp,
+                    )
+                    Text(
+                        text = "Đang đăng nhập",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = WaterBlue,
+                        ),
+                        textAlign = TextAlign.Center,
+                    )
+                    Text(
+                        text = "Đang xác thực thông tin khách hàng…",
+                        style = MaterialTheme.typography.bodySmall,
+                        textAlign = TextAlign.Center,
+                        color = Color.Gray,
+                    )
+                }
             }
         }
     }
