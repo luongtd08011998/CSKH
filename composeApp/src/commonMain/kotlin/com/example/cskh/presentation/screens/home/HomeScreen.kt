@@ -1,5 +1,10 @@
 package com.example.cskh.presentation.screens.home
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -53,6 +58,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
@@ -67,6 +74,10 @@ import com.example.cskh.domain.model.CustomerProfile
 import com.example.cskh.domain.model.InvoiceDetail
 import com.example.cskh.domain.model.InvoiceSummary
 import com.example.cskh.presentation.CompanyBranding
+import com.example.cskh.presentation.NotificationBadgeStore
+import com.example.cskh.presentation.components.DataLoadingStatusBar
+import com.example.cskh.presentation.components.HomeSkeletonContent
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import androidx.compose.ui.platform.UriHandler
 import com.example.cskh.util.formatVnd
@@ -93,6 +104,7 @@ private data class HomeServiceCard(
     val icon: ImageVector,
     val iconBackground: Color,
     val iconTint: Color,
+    val badge: Int = 0,
     val onClick: () -> Unit,
 )
 
@@ -105,10 +117,13 @@ fun HomeScreen(
     onNavigateWaterPrice: () -> Unit,
     onNavigateAbout: () -> Unit,
     onNavigatePhanAnh: () -> Unit,
+    onNavigateFeedbackNotifications: () -> Unit = {},
     onLogout: () -> Unit,
     viewModel: HomeViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
+    val notificationBadgeStore = koinInject<NotificationBadgeStore>()
+    val feedbackUnreadCount by notificationBadgeStore.feedbackUnreadCount.collectAsState()
 
     // Khi refresh token hết hạn → hiển thị thông báo
     if (state.sessionExpired) {
@@ -153,7 +168,8 @@ fun HomeScreen(
             icon = Icons.Filled.Feedback,
             iconBackground = Color(0xFFFFF3E0), // orange-100
             iconTint = Color(0xFFEF6C00), // orange-600
-            onClick = onNavigatePhanAnh,
+            badge = feedbackUnreadCount,
+            onClick = onNavigateFeedbackNotifications,
         ),
         HomeServiceCard(
             title = "Giới thiệu",
@@ -165,6 +181,8 @@ fun HomeScreen(
         ),
     )
 
+    val showSkeleton = state.isLoading && state.customer == null
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -175,61 +193,81 @@ fun HomeScreen(
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
         ) {
-            HomeHero(
-                companyName = CompanyBranding.NAME,
-                customer = state.customer,
-                onOpenProfile = onNavigateCustomerProfile,
+            // ── Giai đoạn 2: Skeleton loading khi chưa có data ──
+            AnimatedContent(
+                targetState = showSkeleton,
+                transitionSpec = {
+                    fadeIn(tween(350)) togetherWith fadeOut(tween(200))
+                },
+                label = "homeContentTransition",
+                modifier = Modifier.fillMaxWidth(),
+            ) { isSkeleton ->
+                if (isSkeleton) {
+                    HomeSkeletonContent()
+                } else {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        HomeHero(
+                            companyName = CompanyBranding.NAME,
+                            customer = state.customer,
+                            onOpenProfile = onNavigateCustomerProfile,
+                        )
+
+                        Box {
+                            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                                Spacer(modifier = Modifier.height(0.dp))
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .padding(horizontal = 16.dp)
+                                    .padding(top = 0.dp)
+                                    .offset(y = (-24).dp),
+                            ) {
+                                val newest = state.recentInvoices.firstOrNull()
+                                CurrentInvoiceCard(
+                                    invoice = newest,
+                                    detail = state.currentInvoiceDetail,
+                                    onThanhToanNgay = {
+                                        newest?.id?.let { onNavigateInvoiceDetail(it) } ?: onNavigateInvoices()
+                                    },
+                                    onXemChiTiet = {
+                                        newest?.id?.let { onNavigateInvoiceDetail(it) } ?: onNavigateInvoices()
+                                    },
+                                    onTraCuuHoaDon = onNavigateInvoices,
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(0.dp))
+
+                        Column(modifier = Modifier.padding(horizontal = 16.dp)) {
+                            Spacer(modifier = Modifier.height(18.dp))
+                            Text(
+                                text = "Menu chức năng",
+                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                                color = Color(0xFF212121),
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            MenuGrid(items = menu)
+
+                            Spacer(modifier = Modifier.height(18.dp))
+                            RecentInvoicesSection(
+                                invoices = state.recentInvoices.take(3),
+                                onViewAll = onNavigateInvoices,
+                            )
+
+                            Spacer(modifier = Modifier.height(18.dp))
+                        }
+                    }
+                }
+            }
+
+            // ── Status bar: loading/slow-connection (luôn hiển thị phía dưới) ──
+            DataLoadingStatusBar(
+                isLoading = state.isLoading,
+                isSlowConnection = state.isSlowConnection,
+                onRetry = { viewModel.retry() },
+                modifier = Modifier.padding(bottom = 8.dp),
             )
-
-            Box {
-                // "Card hóa đơn" nổi đè lên header như mẫu
-                Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                    Spacer(modifier = Modifier.height(0.dp))
-                }
-                Box(
-                    modifier = Modifier
-                        .padding(horizontal = 16.dp)
-                        .padding(top = 0.dp)
-                        .offset(y = (-24).dp),
-                ) {
-                    val newest = state.recentInvoices.firstOrNull()
-                    CurrentInvoiceCard(
-                        invoice = newest,
-                        detail = state.currentInvoiceDetail,
-                        onThanhToanNgay = {
-                            newest?.id?.let { onNavigateInvoiceDetail(it) } ?: onNavigateInvoices()
-                        },
-                        onXemChiTiet = {
-                            newest?.id?.let { onNavigateInvoiceDetail(it) } ?: onNavigateInvoices()
-                        },
-                        onTraCuuHoaDon = onNavigateInvoices,
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(0.dp))
-
-            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-
-                Spacer(modifier = Modifier.height(18.dp))
-                Text(
-                    text = "Menu chức năng",
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                    color = Color(0xFF212121),
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                MenuGrid(
-                    items = menu,
-                )
-
-                Spacer(modifier = Modifier.height(18.dp))
-                RecentInvoicesSection(
-                    invoices = state.recentInvoices.take(3),
-                    onViewAll = onNavigateInvoices,
-                )
-
-                Spacer(modifier = Modifier.height(18.dp))
-            }
         }
     }
 }
@@ -561,18 +599,31 @@ private fun MenuIconCard(
             .padding(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Surface(
-            modifier = Modifier.size(64.dp),
-            shape = RoundedCornerShape(24.dp),
-            color = item.iconBackground,
+        BadgedBox(
+            badge = {
+                if (item.badge > 0) {
+                    Badge(
+                        containerColor = Color.Red,
+                        contentColor = Color.White,
+                    ) {
+                        Text(text = if (item.badge > 9) "9+" else "${item.badge}")
+                    }
+                }
+            },
         ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(
-                    imageVector = item.icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(28.dp),
-                    tint = item.iconTint,
-                )
+            Surface(
+                modifier = Modifier.size(64.dp),
+                shape = RoundedCornerShape(24.dp),
+                color = item.iconBackground,
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = item.icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(28.dp),
+                        tint = item.iconTint,
+                    )
+                }
             }
         }
         Spacer(Modifier.height(10.dp))

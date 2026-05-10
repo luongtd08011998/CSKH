@@ -12,11 +12,18 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
@@ -46,11 +53,15 @@ import com.example.cskh.presentation.screens.notifications.NotificationListScree
 import com.example.cskh.presentation.screens.article.ArticleDetailScreen
 import com.example.cskh.presentation.screens.phananh.PhanAnhDetailScreen
 import com.example.cskh.presentation.screens.phananh.PhanAnhScreen
+import com.example.cskh.presentation.screens.feedback.FeedbackNotificationScreen
+import com.example.cskh.presentation.screens.splash.SplashScreen
 import com.example.cskh.presentation.screens.static.AboutScreen
 import com.example.cskh.presentation.screens.register.RegisterScreen
 import com.example.cskh.presentation.screens.static.WaterPriceScreen
 import com.example.cskh.presentation.theme.CskhTheme
 import com.example.cskh.platform.NotificationPermissionGate
+import com.example.cskh.util.NavigationEvent
+import com.example.cskh.util.PushNavigationBus
 import org.koin.compose.koinInject
 
 @Composable
@@ -97,8 +108,13 @@ private fun MainNavHost(
 ) {
     val sessionManager = koinInject<SessionManager>()
     val notificationBadgeStore = koinInject<NotificationBadgeStore>()
+    val pushNavigationBus = koinInject<PushNavigationBus>()
     val unreadNotificationCount by notificationBadgeStore.unreadCount.collectAsState()
     val navController = rememberNavController()
+
+    // ── Giai đoạn 1: Splash Screen ──
+    var showSplash by remember { mutableStateOf(true) }
+
     val startDestination: Screen = remember {
         if (!sessionManager.accessToken.isNullOrBlank()) {
             Screen.Home
@@ -132,6 +148,21 @@ private fun MainNavHost(
     LaunchedEffect(pendingFeedbackId) {
         if (pendingFeedbackId != null && pendingFeedbackId > 0) {
             navController.navigate(Screen.PhanAnhDetail(pendingFeedbackId))
+            onNavigationHandled()
+        }
+    }
+
+    // Xử lý sự kiện từ PushNavigationBus (khi nhận notification ở foreground)
+    LaunchedEffect(Unit) {
+        pushNavigationBus.events.collect { event ->
+            when (event) {
+                is NavigationEvent.FeedbackDetail -> {
+                    navController.navigate(Screen.PhanAnhDetail(event.id))
+                }
+                is NavigationEvent.InvoiceDetail -> {
+                    navController.navigate(Screen.InvoiceDetail(event.id))
+                }
+            }
         }
     }
 
@@ -165,7 +196,20 @@ private fun MainNavHost(
         }
     }
 
-    Scaffold(
+    // Wrap toàn bộ UI với AnimatedContent để chuyển từ Splash → App mượt
+    AnimatedContent(
+        targetState = showSplash,
+        transitionSpec = {
+            fadeIn(tween(400)) togetherWith fadeOut(tween(300))
+        },
+        label = "splashToAppTransition",
+    ) { isSplash ->
+        if (isSplash) {
+            SplashScreen(onFinished = { showSplash = false })
+            return@AnimatedContent
+        }
+
+        Scaffold(
         bottomBar = {
             if (showBottomBar) {
                 AppBottomBar(
@@ -230,6 +274,7 @@ private fun MainNavHost(
                         onNavigateWaterPrice = { navController.navigate(Screen.WaterPrice) },
                         onNavigateAbout = { navController.navigate(Screen.About) },
                         onNavigatePhanAnh = { navController.navigate(Screen.PhanAnh) },
+                        onNavigateFeedbackNotifications = { navController.navigate(Screen.FeedbackNotifications) },
                         onLogout = onLogout,
                     )
                 }
@@ -328,11 +373,25 @@ private fun MainNavHost(
                         },
                     )
                 }
+                composable<Screen.FeedbackNotifications> {
+                    FeedbackNotificationScreen(
+                        onBack = { navController.popBackStack() },
+                        onLogout = onLogout,
+                        onNavigateFeedback = { feedbackId ->
+                            navController.navigate(Screen.PhanAnhDetail(feedbackId))
+                        },
+                        onNavigateFeedbackList = {
+                            navController.navigate(Screen.PhanAnh) {
+                                launchSingleTop = true
+                            }
+                        },
+                    )
+                }
             }
         }
     }
 }
-
+}
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AppBottomBar(

@@ -6,6 +6,8 @@ import com.example.cskh.data.session.TokenRefreshCoordinator
 import com.example.cskh.domain.model.InvoiceSummary
 import com.example.cskh.domain.model.MaintenanceArticle
 import com.example.cskh.domain.model.NotificationItem
+import com.example.cskh.domain.model.NotificationType
+import com.example.cskh.domain.model.toNotificationType
 import com.example.cskh.domain.model.PageMeta
 import com.example.cskh.domain.usecase.GetMaintenanceArticlesUseCase
 import com.example.cskh.domain.usecase.GetFeaturedArticlesUseCase

@@ -40,6 +40,11 @@ class RegisterViewModel(
         val s = _state.value
         if (s.isSubmitting) return
 
+        if (!s.name.trim().contains(" ")) {
+            _state.update { it.copy(errorMessage = "Vui lòng nhập đầy đủ họ và tên (phải có ít nhất 2 từ)") }
+            return
+        }
+
         viewModelScope.launch {
             _state.update { it.copy(isSubmitting = true, errorMessage = null, registrationTime = null) }
             registerRepository.submitRegistration(

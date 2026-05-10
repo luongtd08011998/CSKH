@@ -23,9 +23,14 @@ class NotificationRepositoryImpl(
     private val sessionManager: SessionManager,
 ) : NotificationRepository {
 
-    override suspend fun getNotifications(baseUrl: String): Result<List<NotificationItem>> = runCatching {
+    override suspend fun getNotifications(baseUrl: String, type: String?, excludeType: String?): Result<List<NotificationItem>> = runCatching {
         val token = sessionManager.accessToken ?: error("Chưa đăng nhập")
-        val url = "${normalizeApiBaseUrl(baseUrl)}/api/v1/qlkh/customer/notifications"
+        val baseEndpoint = "${normalizeApiBaseUrl(baseUrl)}/api/v1/qlkh/customer/notifications"
+        val params = buildList {
+            if (!type.isNullOrBlank()) add("type=$type")
+            if (!excludeType.isNullOrBlank()) add("excludeType=$excludeType")
+        }
+        val url = if (params.isEmpty()) baseEndpoint else "$baseEndpoint?${params.joinToString("&")}"
         val response = client.get(url) {
             header(HttpHeaders.Authorization, "Bearer $token")
         }

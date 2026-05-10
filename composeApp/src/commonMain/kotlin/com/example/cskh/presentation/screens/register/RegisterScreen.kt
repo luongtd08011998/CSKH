@@ -124,22 +124,33 @@ fun RegisterScreen(
                     )
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Họ và tên
+                    val isNameError = state.name.isNotEmpty() && !state.name.trim().contains(" ")
                     Text(
                         text = "Họ và tên chủ hộ",
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                        color = Color(0xFF424242),
+                        color = if (isNameError) MaterialTheme.colorScheme.error else Color(0xFF424242),
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = state.name,
-                        onValueChange = viewModel::onNameChange,
+                        onValueChange = {
+                            viewModel.onNameChange(it)
+                            if (state.errorMessage != null) viewModel.clearError()
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = { Text("Nhập họ và tên", color = Color(0xFF9E9E9E)) },
                         singleLine = true,
                         shape = fieldShape,
+                        isError = isNameError,
+                        supportingText = if (isNameError) {
+                            { Text("Họ và tên phải có ít nhất 2 từ", style = MaterialTheme.typography.labelSmall) }
+                        } else null,
                         leadingIcon = {
-                            Icon(Icons.Filled.Person, contentDescription = null, tint = Color(0xFF9E9E9E))
+                            Icon(
+                                Icons.Filled.Person, 
+                                contentDescription = null, 
+                                tint = if (isNameError) MaterialTheme.colorScheme.error else Color(0xFF9E9E9E)
+                            )
                         },
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedBorderColor = primaryBlue,
@@ -147,6 +158,9 @@ fun RegisterScreen(
                             focusedContainerColor = Color.White,
                             unfocusedContainerColor = fieldBg,
                             cursorColor = primaryBlue,
+                            errorBorderColor = MaterialTheme.colorScheme.error,
+                            errorLeadingIconColor = MaterialTheme.colorScheme.error,
+                            errorContainerColor = Color(0xFFFFFBFA),
                         ),
                     )
 

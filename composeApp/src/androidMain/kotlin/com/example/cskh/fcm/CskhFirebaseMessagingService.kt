@@ -13,6 +13,7 @@ import com.google.firebase.messaging.RemoteMessage
 import com.example.cskh.R
 import com.example.cskh.MainActivity
 import com.example.cskh.platform.FcmDeviceSync
+import com.example.cskh.util.PushNavigationBus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -56,14 +57,17 @@ class CskhFirebaseMessagingService : FirebaseMessagingService() {
             val feedbackId = referenceId.toLongOrNull()
             if (feedbackId != null) {
                 showFeedbackNotification(title = title, body = body, feedbackId = feedbackId)
+                GlobalContext.get().get<PushNavigationBus>().navigateToFeedback(feedbackId)
                 return
             }
         }
 
-        // Spec: type=INVOICE hoặc PAYMENT → deep link vào màn hình Hóa đơn
-        if (type.equals("INVOICE", ignoreCase = true) || type.equals("PAYMENT", ignoreCase = true)) {
+        if (type.equals("INVOICE", ignoreCase = true) || type.equals("PAYMENT", ignoreCase = true) || type.equals("DEBT_REMINDER", ignoreCase = true)) {
             val invoiceId = referenceId.toLongOrNull()
             showInvoiceNotification(title = title, body = body, invoiceId = invoiceId)
+            if (invoiceId != null) {
+                GlobalContext.get().get<PushNavigationBus>().navigateToInvoice(invoiceId)
+            }
             return
         }
 

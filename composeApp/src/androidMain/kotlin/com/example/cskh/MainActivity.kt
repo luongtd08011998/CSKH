@@ -108,7 +108,7 @@ class MainActivity : ComponentActivity() {
         if (fromApp != null) return fromApp
 
         val type = intent?.getStringExtra("type") ?: ""
-        if (!type.equals("INVOICE", ignoreCase = true) && !type.equals("PAYMENT", ignoreCase = true)) return null
+        if (!type.equals("INVOICE", ignoreCase = true) && !type.equals("PAYMENT", ignoreCase = true) && !type.equals("DEBT_REMINDER", ignoreCase = true)) return null
 
         val fromSystem = intent?.getStringExtra("referenceId")
         return fromSystem?.trim()?.toLongOrNull()?.takeIf { it > 0 }
@@ -126,7 +126,7 @@ class MainActivity : ComponentActivity() {
         val type = intent.getStringExtra("type") ?: extras.getString("type")
         if (type != null) {
             when (type.uppercase()) {
-                "PAYMENT", "INVOICE" -> return "notifications_billing"
+                "PAYMENT", "INVOICE", "DEBT_REMINDER" -> return "notifications_billing"
                 "MAINTENANCE", "WATER_CUT" -> return "notifications_maintenance"
                 "NOTIFICATION", "FEATURED" -> return "notifications_featured"
             }

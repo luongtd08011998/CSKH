@@ -13,6 +13,8 @@ import com.example.cskh.domain.usecase.UserFormPreferencesUseCase
 import com.example.cskh.platform.defaultDevMachineApiBaseUrl
 import com.example.cskh.presentation.CompanyBranding
 import com.example.cskh.presentation.NotificationBadgeStore
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -27,6 +29,8 @@ data class HomeUiState(
     val errorMessage: String? = null,
     /** true khi refresh token hết hạn → caller điều hướng về màn hình Login */
     val sessionExpired: Boolean = false,
+    /** true khi request vẫn chưa xong sau SLOW_CONNECTION_THRESHOLD_MS */
+    val isSlowConnection: Boolean = false,
 )
 
 class HomeViewModel(
@@ -40,6 +44,14 @@ class HomeViewModel(
 
     private val _state = MutableStateFlow(HomeUiState())
     val state: StateFlow<HomeUiState> = _state.asStateFlow()
+
+    /** Job theo dõi slow-connection, cancel khi data về kịp */
+    private var slowConnectionJob: Job? = null
+
+    companion object {
+        /** Ngưỡng thời gian (ms) trước khi hiện cảnh báo kết nối chậm */
+        private const val SLOW_CONNECTION_THRESHOLD_MS = 5_000L
+    }
 
     init {
         refresh()
@@ -64,14 +76,23 @@ class HomeViewModel(
             _state.update { it.copy(errorMessage = "Thiếu địa chỉ API. Vui lòng đăng nhập lại.") }
             return
         }
+
+        // Bắt đầu đếm thời gian kết nối chậm
+        slowConnectionJob?.cancel()
+        slowConnectionJob = viewModelScope.launch {
+            delay(SLOW_CONNECTION_THRESHOLD_MS)
+            _state.update { it.copy(isSlowConnection = true) }
+        }
+
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
 
             val meResult = getCustomerMe(baseUrl)
             // Nếu 401 → thử refresh token
             if (isUnauthorized(meResult)) {
+                slowConnectionJob?.cancel()
                 if (!tokenRefresh.tryRefresh()) {
-                    _state.update { it.copy(isLoading = false, sessionExpired = true) }
+                    _state.update { it.copy(isLoading = false, sessionExpired = true, isSlowConnection = false) }
                     return@launch
                 }
                 // Retry sau khi refresh thành công
@@ -86,12 +107,16 @@ class HomeViewModel(
             val detailResult = if (newestId != null) getInvoiceDetail(baseUrl, newestId) else Result.success(null)
             val detail = detailResult.getOrNull()
 
+            // Data đã về → hủy timeout slow-connection
+            slowConnectionJob?.cancel()
+
             _state.update {
                 it.copy(
                     customer = me,
                     currentInvoiceDetail = detail,
                     recentInvoices = invoices,
                     isLoading = false,
+                    isSlowConnection = false,
                     errorMessage = (meResult.exceptionOrNull()
                         ?: invoicesResult.exceptionOrNull()
                         ?: detailResult.exceptionOrNull())?.message,
@@ -99,6 +124,12 @@ class HomeViewModel(
             }
             notificationBadgeStore.refreshFromNetwork()
         }
+    }
+
+    /** Được gọi từ nút "Thử lại" – reset slow-connection flag rồi load lại */
+    fun retry() {
+        _state.update { it.copy(isSlowConnection = false, isLoading = true, errorMessage = null) }
+        refresh()
     }
 
     fun acknowledgeSessionExpired() {

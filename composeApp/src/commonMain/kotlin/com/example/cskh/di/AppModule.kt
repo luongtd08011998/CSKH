@@ -59,8 +59,10 @@ import com.example.cskh.presentation.screens.register.RegisterViewModel
 import com.example.cskh.presentation.screens.phananh.PhanAnhDetailViewModel
 import com.example.cskh.presentation.screens.phananh.PhanAnhListViewModel
 import com.example.cskh.presentation.screens.phananh.PhanAnhViewModel
+import com.example.cskh.presentation.screens.feedback.FeedbackNotificationViewModel
 import com.example.cskh.platform.FcmDeviceSync
 import com.russhwolf.settings.Settings
+import com.example.cskh.util.PushNavigationBus
 import io.ktor.client.HttpClient
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
@@ -113,6 +115,7 @@ val appModule = module {
     single { CreateFeedbackUseCase(get(), get()) }
     single { GetFeedbacksUseCase(get(), get()) }
     single { GetFeedbackDetailUseCase(get(), get()) }
+    single { PushNavigationBus() }
     viewModel { LoginViewModel(get(), get(), get(), get()) }
     viewModel { HomeViewModel(get(), get(), get(), get(), get(), get()) }
     viewModel { InvoiceListViewModel(get(), get(), get()) }
@@ -123,4 +126,5 @@ val appModule = module {
     viewModel { PhanAnhListViewModel(get()) }
     viewModel { (id: Long) -> PhanAnhDetailViewModel(get(), get(), id) }
     viewModel { (id: Long) -> InvoiceDetailViewModel(get(), get(), get(), get(), id) }
+    viewModel { FeedbackNotificationViewModel(get(), get(), get(), get(), get()) }
 }

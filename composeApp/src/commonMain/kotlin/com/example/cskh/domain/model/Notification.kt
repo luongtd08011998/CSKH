@@ -13,3 +13,20 @@ data class NotificationItem(
     val url: String? = null,
 )
 
+enum class NotificationType {
+    BILLING,      // Hóa đơn
+    MAINTENANCE,  // Cúp nước/Bảo trì
+    GENERAL,      // Tin nổi bật
+    FEEDBACK,     // Phản ánh dịch vụ
+}
+
+fun String.toNotificationType(): NotificationType {
+    return when (this.uppercase()) {
+        "BILLING", "INVOICE", "PAYMENT", "DEBT_REMINDER" -> NotificationType.BILLING
+        "MAINTENANCE", "WATER_CUT" -> NotificationType.MAINTENANCE
+        "FEEDBACK" -> NotificationType.FEEDBACK
+        else -> NotificationType.GENERAL
+    }
+}
+
+

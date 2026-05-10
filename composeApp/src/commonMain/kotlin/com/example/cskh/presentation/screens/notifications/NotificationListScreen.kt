@@ -30,24 +30,11 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import com.example.cskh.domain.model.MaintenanceArticle
 import com.example.cskh.domain.model.NotificationItem
+import com.example.cskh.domain.model.NotificationType
+import com.example.cskh.domain.model.toNotificationType
 import com.example.cskh.platform.HtmlContentView
 import org.koin.compose.viewmodel.koinViewModel
 
-enum class NotificationType {
-    BILLING,      // Hóa đơn
-    MAINTENANCE,  // Cúp nước/Bảo trì
-    GENERAL,      // Tin nổi bật
-    FEEDBACK,     // Phản ánh dịch vụ
-}
-
-fun String.toNotificationType(): NotificationType {
-    return when (this.uppercase()) {
-        "BILLING", "INVOICE", "PAYMENT" -> NotificationType.BILLING
-        "MAINTENANCE", "WATER_CUT" -> NotificationType.MAINTENANCE
-        "FEEDBACK" -> NotificationType.FEEDBACK
-        else -> NotificationType.GENERAL
-    }
-}
 
 fun NotificationType.getIcon(): ImageVector {
     return when (this) {
@@ -137,7 +124,7 @@ fun NotificationListScreen(
         else -> notifications
     }
 
-    val unreadCount = notifications.count { !it.isRead }
+    val unreadCount = notifications.count { !it.isRead && it.type.toNotificationType() != NotificationType.FEEDBACK }
 
     Scaffold(
         topBar = {
