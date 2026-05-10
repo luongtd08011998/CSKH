@@ -136,8 +136,8 @@ private fun MainNavHost(
         }
     }
 
-    LaunchedEffect(pendingArticleTitle, pendingArticleContent) {
-        if (pendingArticleTitle != null && pendingArticleContent != null) {
+    LaunchedEffect(pendingArticleTitle, pendingArticleContent, showSplash) {
+        if (!showSplash && pendingArticleTitle != null && pendingArticleContent != null) {
             navController.navigate(
                 Screen.ArticleDetail(title = pendingArticleTitle, content = pendingArticleContent)
             )
@@ -145,38 +145,40 @@ private fun MainNavHost(
     }
 
     // Spec phananh_reply.md §1: FEEDBACK push → navigate FeedbackDetailScreen(id)
-    LaunchedEffect(pendingFeedbackId) {
-        if (pendingFeedbackId != null && pendingFeedbackId > 0) {
+    LaunchedEffect(pendingFeedbackId, showSplash) {
+        if (!showSplash && pendingFeedbackId != null && pendingFeedbackId > 0) {
             navController.navigate(Screen.PhanAnhDetail(pendingFeedbackId))
             onNavigationHandled()
         }
     }
 
     // Xử lý sự kiện từ PushNavigationBus (khi nhận notification ở foreground)
-    LaunchedEffect(Unit) {
-        pushNavigationBus.events.collect { event ->
-            when (event) {
-                is NavigationEvent.FeedbackDetail -> {
-                    navController.navigate(Screen.PhanAnhDetail(event.id))
-                }
-                is NavigationEvent.InvoiceDetail -> {
-                    navController.navigate(Screen.InvoiceDetail(event.id))
+    LaunchedEffect(showSplash) {
+        if (!showSplash) {
+            pushNavigationBus.events.collect { event ->
+                when (event) {
+                    is NavigationEvent.FeedbackDetail -> {
+                        navController.navigate(Screen.PhanAnhDetail(event.id))
+                    }
+                    is NavigationEvent.InvoiceDetail -> {
+                        navController.navigate(Screen.InvoiceDetail(event.id))
+                    }
                 }
             }
         }
     }
 
     // Hóa đơn: tap push có invoiceId → mở trực tiếp chi tiết hóa đơn
-    LaunchedEffect(pendingInvoiceId) {
-        if (pendingInvoiceId != null && pendingInvoiceId > 0) {
+    LaunchedEffect(pendingInvoiceId, showSplash) {
+        if (!showSplash && pendingInvoiceId != null && pendingInvoiceId > 0) {
             navController.navigate(Screen.InvoiceDetail(pendingInvoiceId))
             onNavigationHandled()
         }
     }
 
     // Hóa đơn / Thanh toán: tap push không có invoiceId → mở màn hình Danh sách Thông báo, Tab Hóa đơn
-    LaunchedEffect(pendingNavigateTo) {
-        if (!pendingNavigateTo.isNullOrBlank()) {
+    LaunchedEffect(pendingNavigateTo, showSplash) {
+        if (!showSplash && !pendingNavigateTo.isNullOrBlank()) {
             // Tăng delay để chắc chắn NavHost đã ổn định startDestination
             kotlinx.coroutines.delay(300)
             
