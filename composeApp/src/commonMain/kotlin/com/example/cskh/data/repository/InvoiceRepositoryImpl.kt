@@ -1,9 +1,11 @@
 package com.example.cskh.data.repository
 
+import com.example.cskh.data.remote.dto.EInvoiceViewResponseDto
 import com.example.cskh.data.remote.dto.InvoiceDetailResponseDto
 import com.example.cskh.data.remote.dto.InvoicesListResponseDto
 import com.example.cskh.data.remote.dto.toDomain
 import com.example.cskh.data.session.SessionManager
+import com.example.cskh.domain.model.EInvoiceData
 import com.example.cskh.domain.model.InvoiceDetail
 import com.example.cskh.domain.model.PagedInvoices
 import com.example.cskh.domain.repository.InvoiceRepository
@@ -77,5 +79,23 @@ class InvoiceRepositoryImpl(
             }
             throw e
         }
+    }
+
+    override suspend fun viewEInvoice(baseUrl: String, id: Long): Result<EInvoiceData> = runCatching {
+        val token = sessionManager.accessToken ?: error("Chưa đăng nhập")
+        val url = "${normalizeApiBaseUrl(baseUrl)}/api/v1/qlkh/invoices/$id/e-invoice-view"
+        val response = client.get(url) {
+            header(HttpHeaders.Authorization, "Bearer $token")
+        }
+        if (response.status.value == 401) {
+            error("UNAUTHORIZED_401")
+        }
+        if (response.status.value !in 200..299) {
+            val text = runCatching { response.bodyAsText() }.getOrNull()
+            error(text ?: "HTTP ${response.status.value}")
+        }
+        val envelope = response.body<EInvoiceViewResponseDto>()
+        val dto = envelope.data ?: error(envelope.message ?: "Không có dữ liệu hóa đơn điện tử")
+        dto.toDomain()
     }
 }

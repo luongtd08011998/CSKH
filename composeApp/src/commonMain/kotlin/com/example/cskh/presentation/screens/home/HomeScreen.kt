@@ -407,10 +407,24 @@ private fun CurrentInvoiceCard(
     val isPaid = remember(invoice?.id, invoice?.paymentStatusLabel, invoice?.paymentStatus, detail?.id, detail?.paymentStatusLabel, detail?.paymentStatus) {
         isHomeInvoicePaid(invoice, detail)
     }
-    val statusText = invoice?.paymentStatusLabel?.takeIf { it.isNotBlank() }
-        ?: if (invoice == null) "" else if (isPaid) "Đã thanh toán" else "Chưa thanh toán"
-    val statusBg = if (isPaid) Color(0xFFE8F5E9) else Color(0xFFFFF3E0)
-    val statusColor = if (isPaid) Color(0xFF2E7D32) else Color(0xFFE65100)
+    val isReplacement = invoice?.totalAmount == 0.0
+    val statusText = when {
+        isReplacement -> "HĐ Thay thế/Hủy"
+        invoice?.paymentStatusLabel?.isNotBlank() == true -> invoice.paymentStatusLabel
+        invoice == null -> ""
+        isPaid -> "Đã thanh toán"
+        else -> "Chưa thanh toán"
+    }
+    val statusBg = when {
+        isReplacement -> Color(0xFFE3F2FD)
+        isPaid -> Color(0xFFE8F5E9)
+        else -> Color(0xFFFFF3E0)
+    }
+    val statusColor = when {
+        isReplacement -> Color(0xFF1565C0)
+        isPaid -> Color(0xFF2E7D32)
+        else -> Color(0xFFE65100)
+    }
 
     val monthText = remember(detail?.yearMonth) { detail?.yearMonth.toMonthYearDisplay() }
     val dueText = remember(detail?.endDate) { detail?.endDate.toDateDisplay() }
@@ -512,12 +526,12 @@ private fun CurrentInvoiceCard(
                 Spacer(Modifier.height(14.dp))
                 val primaryClick = when {
                     invoice == null -> onTraCuuHoaDon
-                    isPaid -> onXemChiTiet
+                    isPaid || isReplacement -> onXemChiTiet
                     else -> onThanhToanNgay
                 }
                 val primaryLabel = when {
                     invoice == null -> "Tra cứu hóa đơn"
-                    isPaid -> "Xem chi tiết"
+                    isPaid || isReplacement -> "Xem chi tiết"
                     else -> "Thanh toán ngay"
                 }
                 Button(

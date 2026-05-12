@@ -35,6 +35,8 @@ kotlin {
             implementation(libs.koin.android)
             implementation(project.dependencies.platform(libs.firebase.bom.get()))
             implementation(libs.firebase.messaging)
+            implementation(libs.play.services.base)
+            implementation(libs.work.runtime.ktx)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -95,6 +97,7 @@ android {
         }
     }
     compileOptions {
+        isCoreLibraryDesugaringEnabled = true
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
@@ -102,5 +105,6 @@ android {
 
 dependencies {
     debugImplementation(libs.compose.uiTooling)
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
 

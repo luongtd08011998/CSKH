@@ -30,6 +30,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -45,15 +46,24 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.cskh.domain.model.InvoiceDisplayType
 import com.example.cskh.domain.model.InvoiceSummary
+import com.example.cskh.domain.model.ProcessedInvoice
 import com.example.cskh.util.formatVnd
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -61,6 +71,8 @@ private val pageBackground = Color(0xFFF0F4F8)
 private val paidGreen = Color(0xFF2E7D32)
 private val unpaidOrange = Color(0xFFE65100)
 private val chipBadgeBg = Color(0xFFE8EEF4)
+private val replaceBlue = Color(0xFF1565C0)
+private val replacedGray = Color(0xFF9E9E9E)
 
 private fun InvoiceSummary.isPaid(): Boolean =
     paymentStatusLabel.contains("đã thanh toán", ignoreCase = true)
@@ -106,7 +118,8 @@ fun InvoiceListScreen(
     val primary = MaterialTheme.colorScheme.primary
 
     val displayedItems = remember(state.items, state.searchQuery, state.paymentFilter) {
-        state.items.filter { item ->
+        state.items.filter { processed ->
+            val item = processed.invoice
             val tabOk = when (state.paymentFilter) {
                 InvoicePaymentFilter.All -> true
                 InvoicePaymentFilter.Paid -> item.isPaid()
@@ -122,12 +135,16 @@ fun InvoiceListScreen(
     }
 
     val totalAmountDisplay = remember(displayedItems) {
-        displayedItems.sumOf { it.totalAmount }
+        displayedItems
+            .filter { it.displayType != InvoiceDisplayType.Replaced }
+            .sumOf { it.invoice.totalAmount }
     }
 
     val badgeAll = state.meta?.total ?: state.items.size
-    val badgePaid = remember(state.items) { state.items.count { it.isPaid() } }
-    val badgeUnpaid = remember(state.items) { state.items.count { it.isUnpaid() } }
+    val badgePaid = remember(state.items) { state.items.count { it.invoice.isPaid() } }
+    val badgeUnpaid = remember(state.items) { state.items.count { it.invoice.isUnpaid() } }
+
+    var showReplacementNote by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = pageBackground,
@@ -245,10 +262,11 @@ fun InvoiceListScreen(
                             }
                         }
 
-                        items(displayedItems, key = { it.id }) { item ->
+                        items(displayedItems, key = { it.invoice.id }) { item ->
                             InvoiceCard(
                                 item = item,
-                                onClick = { onOpenDetail(item.id) },
+                                onClick = { onOpenDetail(item.invoice.id) },
+                                onShowReplacementNote = { showReplacementNote = true },
                             )
                         }
 
@@ -297,6 +315,21 @@ fun InvoiceListScreen(
                     )
                 }
             }
+        }
+
+        if (showReplacementNote) {
+            AlertDialog(
+                onDismissRequest = { showReplacementNote = false },
+                title = { Text("Hóa đơn thay thế") },
+                text = {
+                    Text("Đây là hóa đơn điều chỉnh dữ liệu cho kỳ này, hóa đơn trước đó đã được hủy bỏ.")
+                },
+                confirmButton = {
+                    Button(onClick = { showReplacementNote = false }) {
+                        Text("Đã hiểu")
+                    }
+                },
+            )
         }
     }
 }
@@ -462,16 +495,41 @@ private fun PaymentFilterChip(
 
 @Composable
 private fun InvoiceCard(
-    item: InvoiceSummary,
+    item: ProcessedInvoice,
     onClick: () -> Unit,
+    onShowReplacementNote: () -> Unit = {},
 ) {
-    val statusColor = item.statusColor()
-    val pillBg = statusColor.copy(alpha = 0.14f)
+    val invoice = item.invoice
+    val (statusColor, pillBg, statusLabel) = when (item.displayType) {
+        InvoiceDisplayType.Replacement -> Triple(
+            replaceBlue,
+            replaceBlue.copy(alpha = 0.14f),
+            "HĐ Thay thế/Hủy",
+        )
+        InvoiceDisplayType.Replaced -> Triple(
+            replacedGray,
+            replacedGray.copy(alpha = 0.14f),
+            "Đã bị thay thế",
+        )
+        InvoiceDisplayType.Normal -> Triple(
+            invoice.statusColor(),
+            invoice.statusColor().copy(alpha = 0.14f),
+            invoice.paymentStatusLabel,
+        )
+    }
+
+    val cardAlpha = if (item.displayType == InvoiceDisplayType.Replaced) 0.5f else 1f
 
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .then(
+                if (item.displayType == InvoiceDisplayType.Replaced) Modifier
+                else Modifier.clickable {
+                    if (item.displayType == InvoiceDisplayType.Replacement) onShowReplacementNote()
+                    else onClick()
+                }
+            ),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -479,7 +537,8 @@ private fun InvoiceCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(16.dp)
+                .then(Modifier.graphicsLayer { alpha = cardAlpha }),
         ) {
             Box(
                 modifier = Modifier
@@ -496,22 +555,24 @@ private fun InvoiceCard(
                 ) {
                     Column(modifier = Modifier.weight(1f, fill = false)) {
                         Text(
-                            text = "HĐ ${item.id}",
+                            text = "HĐ ${invoice.id}",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         )
                         Text(
-                            text = item.customerName,
+                            text = invoice.customerName,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
-                    Icon(
-                        imageVector = Icons.Default.ChevronRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.7f),
-                    )
+                    if (item.displayType != InvoiceDisplayType.Replaced) {
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.outline.copy(alpha = 0.7f),
+                        )
+                    }
                 }
                 Spacer(modifier = Modifier.height(10.dp))
                 Row(
@@ -525,7 +586,7 @@ private fun InvoiceCard(
                         tint = MaterialTheme.colorScheme.primary,
                     )
                     Text(
-                        text = "Chỉ số: ${item.oldVal} → ${item.newVal} m³",
+                        text = "Chỉ số: ${invoice.oldVal} → ${invoice.newVal} m³",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -542,7 +603,7 @@ private fun InvoiceCard(
                         tint = MaterialTheme.colorScheme.primary,
                     )
                     Text(
-                        text = "Mã KH: ${item.digiCode}",
+                        text = "Mã KH: ${invoice.digiCode}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -553,8 +614,24 @@ private fun InvoiceCard(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
+                    val amountText = if (item.displayType == InvoiceDisplayType.Replacement) {
+                        "0 đ"
+                    } else {
+                        invoice.totalAmount.formatVnd()
+                    }
                     Text(
-                        text = item.totalAmount.formatVnd(),
+                        text = if (item.displayType == InvoiceDisplayType.Replaced) {
+                            buildAnnotatedString {
+                                append(
+                                    AnnotatedString(
+                                        amountText,
+                                        SpanStyle(textDecoration = TextDecoration.LineThrough),
+                                    )
+                                )
+                            }
+                        } else {
+                            buildAnnotatedString { append(amountText) }
+                        },
                         style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
                         color = MaterialTheme.colorScheme.onSurface,
                     )
@@ -563,7 +640,7 @@ private fun InvoiceCard(
                         color = pillBg,
                     ) {
                         Text(
-                            text = item.paymentStatusLabel,
+                            text = statusLabel,
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                             color = statusColor,

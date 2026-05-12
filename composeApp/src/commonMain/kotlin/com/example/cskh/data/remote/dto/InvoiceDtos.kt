@@ -1,10 +1,18 @@
 package com.example.cskh.data.remote.dto
 
+import com.example.cskh.domain.model.EInvoiceData
 import com.example.cskh.domain.model.InvoiceDetail
 import com.example.cskh.domain.model.InvoiceSummary
 import com.example.cskh.domain.model.PageMeta
 import com.example.cskh.domain.model.PagedInvoices
 import kotlinx.serialization.Serializable
+
+@Serializable
+data class BaseErrorResponse(
+    val error: String? = null,
+    val message: String? = null,
+    val statusCode: Int? = null,
+)
 
 @Serializable
 data class InvoicesPageDataDto(
@@ -35,6 +43,7 @@ data class InvoiceListItemDto(
     val paymentStatusLabel: String? = null,
     val oldVal: Int? = null,
     val newVal: Int? = null,
+    val fkey: String? = null,
 )
 
 @Serializable
@@ -59,6 +68,7 @@ data class InvoiceDetailDto(
     val newVal: Int? = null,
     val waterMeterSerial: String? = null,
     val numOfHouseHold: Int? = null,
+    val fkey: String? = null,
 )
 
 fun MetaDto.toDomain(): PageMeta = PageMeta(
@@ -81,6 +91,7 @@ fun InvoiceListItemDto.toDomain(): InvoiceSummary = InvoiceSummary(
     paymentStatusLabel = paymentStatusLabel.orEmpty(),
     oldVal = oldVal ?: 0,
     newVal = newVal ?: 0,
+    fkey = fkey.orEmpty(),
 )
 
 fun InvoiceDetailDto.toDomain(): InvoiceDetail {
@@ -109,6 +120,7 @@ fun InvoiceDetailDto.toDomain(): InvoiceDetail {
         newVal = newVal,
         waterMeterSerial = waterMeterSerial,
         numOfHouseHold = numOfHouseHold,
+        fkey = fkey,
     )
 }
 
@@ -130,3 +142,74 @@ data class InvoiceDetailResponseDto(
     val message: String? = null,
     val statusCode: Int? = null,
 )
+
+@Serializable
+data class EInvoiceViewDto(
+    val invoiceNo: String? = null,
+    val serialNo: String? = null,
+    val formCode: String? = null,
+    val invoiceDate: String? = null,
+    val status: String? = null,
+    val sellerName: String? = null,
+    val sellerTaxCode: String? = null,
+    val sellerAddress: String? = null,
+    val sellerPhone: String? = null,
+    val buyerName: String? = null,
+    val buyerCode: String? = null,
+    val buyerTaxCode: String? = null,
+    val buyerAddress: String? = null,
+    val paymentPeriod: String? = null,
+    val oldMeterReading: String? = null,
+    val newMeterReading: String? = null,
+    val waterConsumption: String? = null,
+    val waterTaxableAmount: String? = null,
+    val vatAmount: String? = null,
+    val vatRate: String? = null,
+    val envProtectionFee: String? = null,
+    val totalAmount: String? = null,
+    val totalInWords: String? = null,
+    val paymentMethod: String? = null,
+    val replacementNote: String? = null,
+)
+
+@Serializable
+data class EInvoiceViewResponseDto(
+    val data: EInvoiceViewDto? = null,
+    val message: String? = null,
+    val statusCode: Int? = null,
+)
+
+fun EInvoiceViewDto.toDomain(): EInvoiceData {
+    val taxable = waterTaxableAmount?.toDoubleOrNull() ?: 0.0
+    val vat = vatAmount?.toDoubleOrNull() ?: 0.0
+    val env = envProtectionFee?.toDoubleOrNull() ?: 0.0
+    val calcTotal = (taxable + vat + env) * 1000
+    
+    return EInvoiceData(
+        invoiceNo = invoiceNo.orEmpty(),
+        serialNo = serialNo,
+        formCode = formCode,
+        invoiceDate = invoiceDate,
+        status = status,
+        sellerName = sellerName,
+        sellerTaxCode = sellerTaxCode,
+        sellerAddress = sellerAddress,
+        sellerPhone = sellerPhone,
+        buyerName = buyerName,
+        buyerCode = buyerCode,
+        buyerTaxCode = buyerTaxCode,
+        buyerAddress = buyerAddress,
+        paymentPeriod = paymentPeriod,
+        oldMeterReading = oldMeterReading?.toIntOrNull(),
+        newMeterReading = newMeterReading?.toIntOrNull(),
+        waterConsumption = waterConsumption?.toIntOrNull(),
+        waterTaxableAmount = waterTaxableAmount?.toDoubleOrNull()?.let { it * 1000 },
+        vatAmount = vatAmount?.toDoubleOrNull()?.let { it * 1000 },
+        vatRate = vatRate?.toDoubleOrNull(),
+        envProtectionFee = envProtectionFee?.toDoubleOrNull()?.let { it * 1000 },
+        totalAmount = totalAmount?.toDoubleOrNull()?.let { it * 1000 } ?: if (calcTotal > 0) calcTotal else null,
+        totalInWords = totalInWords,
+        paymentMethod = paymentMethod,
+        replacementNote = replacementNote,
+    )
+}

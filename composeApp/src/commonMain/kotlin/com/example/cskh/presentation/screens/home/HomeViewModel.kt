@@ -5,7 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.example.cskh.data.session.TokenRefreshCoordinator
 import com.example.cskh.domain.model.CustomerProfile
 import com.example.cskh.domain.model.InvoiceDetail
+import com.example.cskh.domain.model.InvoiceDisplayType
 import com.example.cskh.domain.model.InvoiceSummary
+import com.example.cskh.domain.model.ProcessedInvoice
 import com.example.cskh.domain.usecase.GetCustomerMeUseCase
 import com.example.cskh.domain.usecase.GetInvoiceDetailUseCase
 import com.example.cskh.domain.usecase.GetInvoicesUseCase
@@ -102,8 +104,13 @@ class HomeViewModel(
 
             val invoicesResult = getInvoices(baseUrl, 1, 5)
             val me = meResult.getOrNull()
-            val invoices = invoicesResult.getOrNull()?.items.orEmpty()
-            val newestId = invoices.firstOrNull()?.id
+            val rawInvoices = invoicesResult.getOrNull()?.items.orEmpty()
+            val processed = processInvoices(rawInvoices)
+
+            // Ưu tiên hiển thị hóa đơn Normal, nếu không có thì dùng Replacement, bỏ qua Replaced
+            val displayable = processed.filter { it.displayType != InvoiceDisplayType.Replaced }
+            val newest = displayable.firstOrNull()
+            val newestId = newest?.invoice?.id
             val detailResult = if (newestId != null) getInvoiceDetail(baseUrl, newestId) else Result.success(null)
             val detail = detailResult.getOrNull()
 
@@ -114,7 +121,7 @@ class HomeViewModel(
                 it.copy(
                     customer = me,
                     currentInvoiceDetail = detail,
-                    recentInvoices = invoices,
+                    recentInvoices = displayable.map { p -> p.invoice },
                     isLoading = false,
                     isSlowConnection = false,
                     errorMessage = (meResult.exceptionOrNull()
@@ -140,4 +147,24 @@ class HomeViewModel(
         result.exceptionOrNull()?.message?.let {
             it.contains("401") || it.contains("UNAUTHORIZED_401") || it.contains("Chưa đăng nhập")
         } == true
+
+    private fun processInvoices(items: List<InvoiceSummary>): List<ProcessedInvoice> {
+        val grouped = items.groupBy { it.yearMonth }
+        val processed = mutableListOf<ProcessedInvoice>()
+        for ((_, group) in grouped) {
+            val zeroInvoice = group.firstOrNull { it.totalAmount == 0.0 }
+            if (group.size > 1 && zeroInvoice != null) {
+                processed.add(ProcessedInvoice(zeroInvoice, InvoiceDisplayType.Replacement))
+                group.filter { it.id != zeroInvoice.id }.forEach {
+                    processed.add(ProcessedInvoice(it, InvoiceDisplayType.Replaced))
+                }
+            } else {
+                group.forEach { processed.add(ProcessedInvoice(it, InvoiceDisplayType.Normal)) }
+            }
+        }
+        return processed.sortedWith(
+            compareByDescending<ProcessedInvoice> { it.invoice.yearMonth }
+                .thenByDescending { it.invoice.id }
+        )
+    }
 }

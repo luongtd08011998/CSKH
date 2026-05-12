@@ -33,7 +33,12 @@ class AuthRepositoryImpl(
         }
         if (response.status.value !in 200..299) {
             val text = runCatching { response.bodyAsText() }.getOrNull()
-            error(text ?: "HTTP ${response.status.value}")
+            val errorMessage = text?.let {
+                runCatching {
+                    kotlinx.serialization.json.Json { ignoreUnknownKeys = true }.decodeFromString<com.example.cskh.data.remote.dto.BaseErrorResponse>(it).message
+                }.getOrNull()
+            }
+            error(errorMessage ?: text ?: "HTTP ${response.status.value}")
         }
         val envelope = response.body<AuthResponseDto>()
         val data = envelope.data ?: error(envelope.message ?: "Không nhận được token")
@@ -54,7 +59,12 @@ class AuthRepositoryImpl(
         }
         if (response.status.value !in 200..299) {
             val text = runCatching { response.bodyAsText() }.getOrNull()
-            error(text ?: "HTTP ${response.status.value}")
+            val errorMessage = text?.let {
+                runCatching {
+                    kotlinx.serialization.json.Json { ignoreUnknownKeys = true }.decodeFromString<com.example.cskh.data.remote.dto.BaseErrorResponse>(it).message
+                }.getOrNull()
+            }
+            error(errorMessage ?: text ?: "HTTP ${response.status.value}")
         }
         val envelope = response.body<AuthResponseDto>()
         val data = envelope.data ?: error(envelope.message ?: "Không nhận được token mới")
@@ -70,7 +80,12 @@ class AuthRepositoryImpl(
         }
         if (response.status.value !in 200..299) {
             val text = runCatching { response.bodyAsText() }.getOrNull()
-            error(text ?: "HTTP ${response.status.value}")
+            val errorMessage = text?.let {
+                runCatching {
+                    kotlinx.serialization.json.Json { ignoreUnknownKeys = true }.decodeFromString<com.example.cskh.data.remote.dto.BaseErrorResponse>(it).message
+                }.getOrNull()
+            }
+            error(errorMessage ?: text ?: "HTTP ${response.status.value}")
         }
     }
 }

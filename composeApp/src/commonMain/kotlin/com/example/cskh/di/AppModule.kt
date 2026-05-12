@@ -26,6 +26,7 @@ import com.example.cskh.domain.repository.MaintenanceArticleRepository
 import com.example.cskh.domain.repository.FeaturedArticleRepository
 import com.example.cskh.domain.usecase.DownloadAndSaveEInvoiceZipUseCase
 import com.example.cskh.domain.usecase.CreateFeedbackUseCase
+import com.example.cskh.domain.usecase.GetEInvoiceViewUseCase
 import com.example.cskh.domain.usecase.GetCustomerMeUseCase
 import com.example.cskh.domain.usecase.GetFeedbackDetailUseCase
 import com.example.cskh.domain.usecase.GetFeedbacksUseCase
@@ -91,6 +92,7 @@ val appModule = module {
     single { LogoutUseCase(get()) }
     single { GetInvoicesUseCase(get()) }
     single { GetInvoiceDetailUseCase(get()) }
+    single { GetEInvoiceViewUseCase(get()) }
     single<InvoiceZipSaver> { InvoiceZipSaverImpl() }
     single<QrPngSaver> { QrPngSaverImpl() }
     single { DownloadAndSaveEInvoiceZipUseCase(get(), get()) }
@@ -125,6 +127,6 @@ val appModule = module {
     viewModel { RegisterViewModel(get()) }
     viewModel { PhanAnhListViewModel(get()) }
     viewModel { (id: Long) -> PhanAnhDetailViewModel(get(), get(), id) }
-    viewModel { (id: Long) -> InvoiceDetailViewModel(get(), get(), get(), get(), id) }
+    viewModel { (id: Long) -> InvoiceDetailViewModel(get(), get(), get(), get(), get(), id) }
     viewModel { FeedbackNotificationViewModel(get(), get(), get(), get(), get()) }
 }

@@ -3,8 +3,10 @@ package com.example.cskh.presentation.screens.invoices
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.cskh.data.session.TokenRefreshCoordinator
+import com.example.cskh.domain.model.InvoiceDisplayType
 import com.example.cskh.domain.model.InvoiceSummary
 import com.example.cskh.domain.model.PageMeta
+import com.example.cskh.domain.model.ProcessedInvoice
 import com.example.cskh.domain.usecase.GetInvoicesUseCase
 import com.example.cskh.domain.usecase.UserFormPreferencesUseCase
 import kotlinx.coroutines.Dispatchers
@@ -22,7 +24,7 @@ enum class InvoicePaymentFilter {
 }
 
 data class InvoiceListUiState(
-    val items: List<InvoiceSummary> = emptyList(),
+    val items: List<ProcessedInvoice> = emptyList(),
     val meta: PageMeta? = null,
     val isLoading: Boolean = false,
     val isLoadingMore: Boolean = false,
@@ -103,9 +105,10 @@ class InvoiceListViewModel(
             result.fold(
                 onSuccess = { paged ->
                     _state.update { st ->
-                        val merged = if (append) st.items + paged.items else paged.items
+                        val rawExisting = st.items.map { it.invoice }
+                        val mergedRaw = if (append) rawExisting + paged.items else paged.items
                         st.copy(
-                            items = merged,
+                            items = processInvoices(mergedRaw),
                             meta = paged.meta,
                             currentPage = page,
                             isLoading = false,
@@ -130,6 +133,26 @@ class InvoiceListViewModel(
         result.exceptionOrNull()?.message?.let {
             it.contains("401") || it.contains("UNAUTHORIZED_401") || it.contains("Chưa đăng nhập")
         } == true
+
+    private fun processInvoices(items: List<InvoiceSummary>): List<ProcessedInvoice> {
+        val grouped = items.groupBy { it.yearMonth }
+        val processed = mutableListOf<ProcessedInvoice>()
+        for ((_, group) in grouped) {
+            val zeroInvoice = group.firstOrNull { it.totalAmount == 0.0 }
+            if (group.size > 1 && zeroInvoice != null) {
+                processed.add(ProcessedInvoice(zeroInvoice, InvoiceDisplayType.Replacement))
+                group.filter { it.id != zeroInvoice.id }.forEach {
+                    processed.add(ProcessedInvoice(it, InvoiceDisplayType.Replaced))
+                }
+            } else {
+                group.forEach { processed.add(ProcessedInvoice(it, InvoiceDisplayType.Normal)) }
+            }
+        }
+        return processed.sortedWith(
+            compareByDescending<ProcessedInvoice> { it.invoice.yearMonth }
+                .thenByDescending { it.invoice.id }
+        )
+    }
 
     companion object {
         private const val PAGE_SIZE = 20
