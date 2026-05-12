@@ -287,6 +287,11 @@ fun InvoiceDetailScreen(
                         val isLoadingEi = state.isEInvoiceViewLoading
                         val isReplacement = d.totalAmount == 0.0
 
+                        if (isReplacement) {
+                            ReplacementNoteCard()
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
+
                         if (isLoadingEi) {
                             EInvoiceSkeleton()
                         } else if (ei != null) {
@@ -1225,23 +1230,6 @@ private fun EInvoiceFooterSection(
             }
             Spacer(modifier = Modifier.height(12.dp))
         }
-        if (isReplacement) {
-            Surface(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                color = Color(0xFFE3F2FD),
-                border = BorderStroke(1.dp, Color(0xFF90CAF9)),
-            ) {
-                Row(modifier = Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Filled.Description, null, tint = Color(0xFF1565C0), modifier = Modifier.size(18.dp))
-                    Column {
-                        Text("Hóa đơn thay thế/Hủy", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = Color(0xFF1565C0))
-                        Text("Đây là hóa đơn điều chỉnh dữ liệu cho kỳ này, hóa đơn trước đó đã được hủy bỏ.", style = MaterialTheme.typography.bodySmall, color = Color(0xFF42A5F5))
-                    }
-                }
-            }
-            Spacer(modifier = Modifier.height(16.dp))
-        }
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -1504,3 +1492,38 @@ private fun EInvoicePaymentContent(ei: EInvoiceData) {
 
 private fun InvoiceDetail.isPaid(): Boolean =
     paymentStatusLabel.contains("đã thanh toán", ignoreCase = true)
+
+@Composable
+private fun ReplacementNoteCard() {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        color = Color(0xFFE3F2FD),
+        border = BorderStroke(1.dp, Color(0xFF90CAF9)),
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Filled.Description,
+                null,
+                tint = Color(0xFF1565C0),
+                modifier = Modifier.size(24.dp)
+            )
+            Column {
+                Text(
+                    "Hóa đơn thay thế/Hủy",
+                    style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                    color = Color(0xFF1565C0)
+                )
+                Text(
+                    "Đây là hóa đơn điều chỉnh dữ liệu cho kỳ này, hóa đơn trước đó đã được hủy bỏ.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFF42A5F5)
+                )
+            }
+        }
+    }
+}

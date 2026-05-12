@@ -144,7 +144,6 @@ fun InvoiceListScreen(
     val badgePaid = remember(state.items) { state.items.count { it.invoice.isPaid() } }
     val badgeUnpaid = remember(state.items) { state.items.count { it.invoice.isUnpaid() } }
 
-    var showReplacementNote by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = pageBackground,
@@ -265,8 +264,7 @@ fun InvoiceListScreen(
                         items(displayedItems, key = { it.invoice.id }) { item ->
                             InvoiceCard(
                                 item = item,
-                                onClick = { onOpenDetail(item.invoice.id) },
-                                onShowReplacementNote = { showReplacementNote = true },
+                                onClick = { onOpenDetail(item.invoice.id) }
                             )
                         }
 
@@ -317,20 +315,6 @@ fun InvoiceListScreen(
             }
         }
 
-        if (showReplacementNote) {
-            AlertDialog(
-                onDismissRequest = { showReplacementNote = false },
-                title = { Text("Hóa đơn thay thế") },
-                text = {
-                    Text("Đây là hóa đơn điều chỉnh dữ liệu cho kỳ này, hóa đơn trước đó đã được hủy bỏ.")
-                },
-                confirmButton = {
-                    Button(onClick = { showReplacementNote = false }) {
-                        Text("Đã hiểu")
-                    }
-                },
-            )
-        }
     }
 }
 
@@ -497,7 +481,6 @@ private fun PaymentFilterChip(
 private fun InvoiceCard(
     item: ProcessedInvoice,
     onClick: () -> Unit,
-    onShowReplacementNote: () -> Unit = {},
 ) {
     val invoice = item.invoice
     val (statusColor, pillBg, statusLabel) = when (item.displayType) {
@@ -526,8 +509,7 @@ private fun InvoiceCard(
             .then(
                 if (item.displayType == InvoiceDisplayType.Replaced) Modifier
                 else Modifier.clickable {
-                    if (item.displayType == InvoiceDisplayType.Replacement) onShowReplacementNote()
-                    else onClick()
+                    onClick()
                 }
             ),
         shape = RoundedCornerShape(16.dp),
