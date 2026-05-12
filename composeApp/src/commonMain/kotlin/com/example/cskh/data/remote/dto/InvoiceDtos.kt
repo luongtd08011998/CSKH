@@ -180,11 +180,11 @@ data class EInvoiceViewResponseDto(
 )
 
 fun EInvoiceViewDto.toDomain(): EInvoiceData {
-    val taxable = waterTaxableAmount?.toDoubleOrNull() ?: 0.0
-    val vat = vatAmount?.toDoubleOrNull() ?: 0.0
-    val env = envProtectionFee?.toDoubleOrNull() ?: 0.0
-    val calcTotal = (taxable + vat + env) * 1000
-    
+    val taxable = waterTaxableAmount.parseVnMoney() ?: 0.0
+    val vat = vatAmount.parseVnMoney() ?: 0.0
+    val env = envProtectionFee.parseVnMoney() ?: 0.0
+    val calcTotal = taxable + vat + env
+
     return EInvoiceData(
         invoiceNo = invoiceNo.orEmpty(),
         serialNo = serialNo,
@@ -200,16 +200,21 @@ fun EInvoiceViewDto.toDomain(): EInvoiceData {
         buyerTaxCode = buyerTaxCode,
         buyerAddress = buyerAddress,
         paymentPeriod = paymentPeriod,
-        oldMeterReading = oldMeterReading?.toIntOrNull(),
-        newMeterReading = newMeterReading?.toIntOrNull(),
-        waterConsumption = waterConsumption?.toIntOrNull(),
-        waterTaxableAmount = waterTaxableAmount?.toDoubleOrNull()?.let { it * 1000 },
-        vatAmount = vatAmount?.toDoubleOrNull()?.let { it * 1000 },
+        oldMeterReading = oldMeterReading.parseVnMoney()?.toInt(),
+        newMeterReading = newMeterReading.parseVnMoney()?.toInt(),
+        waterConsumption = waterConsumption.parseVnMoney()?.toInt(),
+        waterTaxableAmount = taxable,
+        vatAmount = vat,
         vatRate = vatRate?.toDoubleOrNull(),
-        envProtectionFee = envProtectionFee?.toDoubleOrNull()?.let { it * 1000 },
-        totalAmount = totalAmount?.toDoubleOrNull()?.let { it * 1000 } ?: if (calcTotal > 0) calcTotal else null,
+        envProtectionFee = env,
+        totalAmount = totalAmount.parseVnMoney() ?: if (calcTotal > 0) calcTotal else null,
         totalInWords = totalInWords,
         paymentMethod = paymentMethod,
         replacementNote = replacementNote,
     )
+}
+
+private fun String?.parseVnMoney(): Double? {
+    if (this == null || this.isBlank()) return null
+    return this.replace(".", "").replace(",", ".").toDoubleOrNull()
 }

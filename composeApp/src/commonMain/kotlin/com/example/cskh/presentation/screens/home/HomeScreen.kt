@@ -446,25 +446,13 @@ private fun CurrentInvoiceCard(
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Column(modifier = Modifier.weight(1f, fill = false)) {
-                        Text(
-                            text = if (monthText.isNotBlank()) "Hóa đơn tháng $monthText" else "Hóa đơn tháng hiện tại",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color(0xFF607D8B),
-                        )
-                        Spacer(Modifier.height(2.dp))
-                        Text(
-                            text = invoice?.totalAmount?.formatVnd() ?: "—",
-                            style = MaterialTheme.typography.displaySmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFF1F2933),
-                            ),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
+                    Text(
+                        text = if (monthText.isNotBlank()) "Hóa đơn tháng $monthText" else "Hóa đơn tháng hiện tại",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color(0xFF607D8B),
+                    )
                     if (invoice != null) {
                         Surface(
                             color = statusBg,
@@ -479,6 +467,17 @@ private fun CurrentInvoiceCard(
                         }
                     }
                 }
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = invoice?.totalAmount?.formatVnd() ?: "—",
+                    style = MaterialTheme.typography.displaySmall.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1F2933),
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.fillMaxWidth()
+                )
 
                 if (invoice != null) {
                     Spacer(Modifier.height(10.dp))
