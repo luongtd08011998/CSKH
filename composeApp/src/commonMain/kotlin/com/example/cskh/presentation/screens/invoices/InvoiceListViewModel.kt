@@ -106,7 +106,8 @@ class InvoiceListViewModel(
                 onSuccess = { paged ->
                     _state.update { st ->
                         val rawExisting = st.items.map { it.invoice }
-                        val mergedRaw = if (append) rawExisting + paged.items else paged.items
+                        val newItems = paged.items.filter { it.fkey.isNotBlank() }
+                        val mergedRaw = if (append) rawExisting + newItems else newItems
                         st.copy(
                             items = processInvoices(mergedRaw),
                             meta = paged.meta,

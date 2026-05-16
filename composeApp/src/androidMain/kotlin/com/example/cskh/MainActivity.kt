@@ -108,7 +108,7 @@ class MainActivity : ComponentActivity() {
         if (fromApp != null) return fromApp
 
         val type = intent?.getStringExtra("type") ?: ""
-        if (!type.equals("INVOICE", ignoreCase = true) && !type.equals("PAYMENT", ignoreCase = true) && !type.equals("DEBT_REMINDER", ignoreCase = true)) return null
+        if (!type.equals("INVOICE", ignoreCase = true) && !type.equals("PAYMENT", ignoreCase = true) && !type.equals("DEBT_REMINDER", ignoreCase = true) && !type.equals("OVERDUE", ignoreCase = true) && !type.equals("WATER_CUTOFF", ignoreCase = true)) return null
 
         val fromSystem = intent?.getStringExtra("referenceId")
         return fromSystem?.trim()?.toLongOrNull()?.takeIf { it > 0 }
@@ -126,7 +126,7 @@ class MainActivity : ComponentActivity() {
         val type = intent.getStringExtra("type") ?: extras.getString("type")
         if (type != null) {
             when (type.uppercase()) {
-                "PAYMENT", "INVOICE", "DEBT_REMINDER" -> return "notifications_billing"
+                "PAYMENT", "INVOICE", "DEBT_REMINDER", "OVERDUE", "WATER_CUTOFF" -> return "notifications_billing"
                 "MAINTENANCE", "WATER_CUT" -> return "notifications_maintenance"
                 "NOTIFICATION", "FEATURED" -> return "notifications_featured"
             }
@@ -138,7 +138,7 @@ class MainActivity : ComponentActivity() {
             ?: intent.getStringExtra("title")
             ?: extras.getString("title")
         if (title != null) {
-            if (title.contains("Hóa đơn", ignoreCase = true) || title.contains("Thanh toán", ignoreCase = true)) {
+            if (title.contains("Hóa đơn", ignoreCase = true) || title.contains("Thanh toán", ignoreCase = true) || title.contains("quá hạn", ignoreCase = true) || title.contains("cúp nước", ignoreCase = true)) {
                 return "notifications_billing"
             }
             if (title.contains("nổi bật", ignoreCase = true) || title.contains("Bài viết", ignoreCase = true)) {

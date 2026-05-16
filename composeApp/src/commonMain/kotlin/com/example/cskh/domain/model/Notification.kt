@@ -14,15 +14,19 @@ data class NotificationItem(
 )
 
 enum class NotificationType {
-    BILLING,      // Hóa đơn
-    MAINTENANCE,  // Cúp nước/Bảo trì
-    GENERAL,      // Tin nổi bật
-    FEEDBACK,     // Phản ánh dịch vụ
+    BILLING,       // Hóa đơn
+    OVERDUE,       // Quá hạn thanh toán
+    WATER_CUTOFF,  // Cúp nước do quá hạn
+    MAINTENANCE,   // Cúp nước/Bảo trì
+    GENERAL,       // Tin nổi bật
+    FEEDBACK,      // Phản ánh dịch vụ
 }
 
 fun String.toNotificationType(): NotificationType {
     return when (this.uppercase()) {
         "BILLING", "INVOICE", "PAYMENT", "DEBT_REMINDER" -> NotificationType.BILLING
+        "OVERDUE" -> NotificationType.OVERDUE
+        "WATER_CUTOFF" -> NotificationType.WATER_CUTOFF
         "MAINTENANCE", "WATER_CUT" -> NotificationType.MAINTENANCE
         "FEEDBACK" -> NotificationType.FEEDBACK
         else -> NotificationType.GENERAL

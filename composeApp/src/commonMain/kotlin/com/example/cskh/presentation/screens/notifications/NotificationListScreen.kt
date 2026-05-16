@@ -39,6 +39,8 @@ import org.koin.compose.viewmodel.koinViewModel
 fun NotificationType.getIcon(): ImageVector {
     return when (this) {
         NotificationType.BILLING -> Icons.Default.Receipt
+        NotificationType.OVERDUE -> Icons.Default.Warning
+        NotificationType.WATER_CUTOFF -> Icons.Default.Warning
         NotificationType.MAINTENANCE -> Icons.Default.WaterDrop
         NotificationType.FEEDBACK -> Icons.Default.Feedback
         NotificationType.GENERAL -> Icons.Default.Info
@@ -48,6 +50,8 @@ fun NotificationType.getIcon(): ImageVector {
 fun NotificationType.getColor(): Color {
     return when (this) {
         NotificationType.BILLING -> Color(0xFF2196F3)       // Xanh dương
+        NotificationType.OVERDUE -> Color(0xFFFF9800)       // Cam
+        NotificationType.WATER_CUTOFF -> Color(0xFFE53935)  // Đỏ
         NotificationType.MAINTENANCE -> Color(0xFFEF5350)   // Đỏ
         NotificationType.FEEDBACK -> Color(0xFF4CAF50)      // Xanh lá
         NotificationType.GENERAL -> Color(0xFF9C27B0)       // Tím
@@ -57,6 +61,8 @@ fun NotificationType.getColor(): Color {
 fun NotificationType.getBackgroundColor(): Color {
     return when (this) {
         NotificationType.BILLING -> Color(0xFFE3F2FD)
+        NotificationType.OVERDUE -> Color(0xFFFFF3E0)       // Cam nhạt
+        NotificationType.WATER_CUTOFF -> Color(0xFFFFEBEE)  // Đỏ nhạt
         NotificationType.MAINTENANCE -> Color(0xFFFFF3E0)
         NotificationType.FEEDBACK -> Color(0xFFE8F5E9)
         NotificationType.GENERAL -> Color(0xFFF3E5F5)
@@ -118,7 +124,10 @@ fun NotificationListScreen(
 
     val notifications = state.items
     val filteredNotifications = when (selectedTab) {
-        0 -> notifications.filter { it.type.toNotificationType() == NotificationType.BILLING }
+        0 -> notifications.filter {
+            val t = it.type.toNotificationType()
+            t == NotificationType.BILLING || t == NotificationType.OVERDUE || t == NotificationType.WATER_CUTOFF
+        }
         1 -> emptyList() // Tab Cúp nước dùng API riêng
         2 -> emptyList() // Tab Nổi bật dùng API riêng
         else -> notifications
@@ -223,7 +232,13 @@ fun NotificationListScreen(
                     ) {
                         tabs.forEachIndexed { index, (title, type) ->
                             val isSelected = selectedTab == index
-                            val tabCount = notifications.count { it.type.toNotificationType() == type && !it.isRead }
+                            val tabCount = notifications.count {
+                                val t = it.type.toNotificationType()
+                                when (type) {
+                                    NotificationType.BILLING -> t == NotificationType.BILLING || t == NotificationType.OVERDUE || t == NotificationType.WATER_CUTOFF
+                                    else -> t == type
+                                } && !it.isRead
+                            }
                             Tab(
                                 selected = isSelected,
                                 onClick = { selectedTab = index },
@@ -319,7 +334,9 @@ fun NotificationListScreen(
                                                         && notification.referenceId != null -> {
                                                         onNavigateFeedback(notification.referenceId)
                                                     }
-                                                    notification.type.toNotificationType() == NotificationType.BILLING -> {
+                                                    notification.type.toNotificationType() == NotificationType.BILLING
+                                                        || notification.type.toNotificationType() == NotificationType.OVERDUE
+                                                        || notification.type.toNotificationType() == NotificationType.WATER_CUTOFF -> {
                                                         val resolvedId = viewModel.resolveInvoiceId(notification)
                                                         onNavigateInvoices(resolvedId)
                                                     }
@@ -540,6 +557,8 @@ private fun stripHtmlTags(html: String): String {
         .replace("&#39;", "'")
         
     text = text.replace(Regex("[ \\t]+"), " ")
+
+    text = text.replace(". ", ".\n")
     
     return text.split('\n')
         .map { it.trim() }
@@ -723,16 +742,7 @@ fun NotificationCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = notification.title.ifBlank { "Thông báo" },
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF212121),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
+            Spacer(modifier = Modifier.height(4.dp))
 
             Spacer(modifier = Modifier.height(6.dp))
 
@@ -741,13 +751,7 @@ fun NotificationCard(
                 fontSize = 15.sp,
                 color = Color(0xFF212121),
                 lineHeight = 22.sp,
-                maxLines = 4,
-                overflow = TextOverflow.Ellipsis
             )
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            ContactFooter()
 
             Spacer(modifier = Modifier.height(12.dp))
 

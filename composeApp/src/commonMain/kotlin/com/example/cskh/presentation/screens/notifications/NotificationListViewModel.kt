@@ -376,7 +376,8 @@ class NotificationListViewModel(
      * Fallback về referenceId nếu không tìm thấy.
      */
     fun resolveInvoiceId(notification: NotificationItem): Long? {
-        if (notification.type.toNotificationType() != NotificationType.BILLING) {
+        val type = notification.type.toNotificationType()
+        if (type != NotificationType.BILLING && type != NotificationType.OVERDUE && type != NotificationType.WATER_CUTOFF) {
             return notification.referenceId
         }
         val targetMonth = parseMonthFromContent(notification.content) ?: return notification.referenceId

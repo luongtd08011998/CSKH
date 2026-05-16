@@ -5,6 +5,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.interop.UIKitView
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.cinterop.ExperimentalForeignApi
+import platform.UIKit.UIColor
 import platform.WebKit.WKWebView
 
 @OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
@@ -41,9 +42,9 @@ actual fun HtmlContentView(
     UIKitView(
         factory = {
             WKWebView().apply {
-                isOpaque = false
-                backgroundColor = platform.UIColor.clearColor
-                scrollView.isScrollEnabled = false
+                setOpaque(false)
+                setBackgroundColor(UIColor.clearColor)
+                scrollView.scrollEnabled = false
                 loadHTMLString(fullHtml, baseURL = null)
             }
         },

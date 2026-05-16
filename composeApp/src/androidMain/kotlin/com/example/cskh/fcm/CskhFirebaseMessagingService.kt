@@ -62,7 +62,7 @@ class CskhFirebaseMessagingService : FirebaseMessagingService() {
             }
         }
 
-        if (type.equals("INVOICE", ignoreCase = true) || type.equals("PAYMENT", ignoreCase = true) || type.equals("DEBT_REMINDER", ignoreCase = true)) {
+        if (type.equals("INVOICE", ignoreCase = true) || type.equals("PAYMENT", ignoreCase = true) || type.equals("DEBT_REMINDER", ignoreCase = true) || type.equals("OVERDUE", ignoreCase = true) || type.equals("WATER_CUTOFF", ignoreCase = true)) {
             val invoiceId = referenceId.toLongOrNull()
             showInvoiceNotification(title = title, body = body, invoiceId = invoiceId)
             if (invoiceId != null) {

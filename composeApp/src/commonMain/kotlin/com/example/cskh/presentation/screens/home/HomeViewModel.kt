@@ -104,7 +104,7 @@ class HomeViewModel(
 
             val invoicesResult = getInvoices(baseUrl, 1, 5)
             val me = meResult.getOrNull()
-            val rawInvoices = invoicesResult.getOrNull()?.items.orEmpty()
+            val rawInvoices = invoicesResult.getOrNull()?.items?.filter { it.fkey.isNotBlank() }.orEmpty()
             val processed = processInvoices(rawInvoices)
 
             // Ưu tiên hiển thị hóa đơn Normal, nếu không có thì dùng Replacement, bỏ qua Replaced
