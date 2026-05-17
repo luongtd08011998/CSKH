@@ -44,6 +44,7 @@ data class InvoiceListItemDto(
     val oldVal: Int? = null,
     val newVal: Int? = null,
     val fkey: String? = null,
+    val blankNo: String? = null,
 )
 
 @Serializable
@@ -69,6 +70,7 @@ data class InvoiceDetailDto(
     val waterMeterSerial: String? = null,
     val numOfHouseHold: Int? = null,
     val fkey: String? = null,
+    val blankNo: String? = null,
 )
 
 fun MetaDto.toDomain(): PageMeta = PageMeta(
@@ -92,10 +94,12 @@ fun InvoiceListItemDto.toDomain(): InvoiceSummary = InvoiceSummary(
     oldVal = oldVal ?: 0,
     newVal = newVal ?: 0,
     fkey = fkey.orEmpty(),
+    blankNo = blankNo,
 )
 
 fun InvoiceDetailDto.toDomain(): InvoiceDetail {
     val resolvedId = monthInvoiceId ?: id ?: 0L
+    println("==== DEBUG API PARSING INVOICE: id=$resolvedId, blankNo=$blankNo, fkey=$fkey, rawDto=$this ====")
     val pay = paymentStatus ?: invStatus ?: 0
     val label = paymentStatusLabel.orEmpty()
     val amt = amount ?: 0.0
@@ -121,12 +125,13 @@ fun InvoiceDetailDto.toDomain(): InvoiceDetail {
         waterMeterSerial = waterMeterSerial,
         numOfHouseHold = numOfHouseHold,
         fkey = fkey,
+        blankNo = blankNo,
     )
 }
 
 fun InvoicesPageDataDto.toDomain(): PagedInvoices = PagedInvoices(
     meta = meta?.toDomain() ?: PageMeta(1, 20, 1, 0),
-    items = (result ?: items)?.map { it.toDomain() } ?: emptyList(),
+    items = (result ?: items)?.map { it.toDomain() }?.filter { it.fkey.isNotBlank() } ?: emptyList(),
 )
 
 @Serializable

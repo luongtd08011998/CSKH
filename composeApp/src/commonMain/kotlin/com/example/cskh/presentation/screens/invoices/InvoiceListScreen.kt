@@ -537,7 +537,7 @@ private fun InvoiceCard(
                 ) {
                     Column(modifier = Modifier.weight(1f, fill = false)) {
                         Text(
-                            text = "HĐ ${invoice.id}",
+                            text = "Số hóa đơn: ${invoice.blankNo?.takeIf { it.isNotBlank() } ?: invoice.id}",
                             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
                         )
                         Text(

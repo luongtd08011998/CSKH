@@ -21,6 +21,7 @@ data class InvoiceSummary(
     val oldVal: Int,
     val newVal: Int,
     val fkey: String = "",
+    val blankNo: String? = null,
 )
 
 data class PagedInvoices(
@@ -48,6 +49,7 @@ data class InvoiceDetail(
     val waterMeterSerial: String?,
     val numOfHouseHold: Int?,
     val fkey: String? = null,
+    val blankNo: String? = null,
 )
 
 enum class InvoiceDisplayType { Normal, Replacement, Replaced }

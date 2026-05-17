@@ -24,9 +24,6 @@ data class InvoiceDetailUiState(
     val isEInvoiceDownloading: Boolean = false,
     val eInvoiceMessage: String? = null,
     val eInvoiceError: String? = null,
-    val eInvoiceData: EInvoiceData? = null,
-    val isEInvoiceViewLoading: Boolean = false,
-    val eInvoiceViewError: String? = null,
     /** true khi refresh token hết hạn → caller điều hướng về màn hình Login */
     val sessionExpired: Boolean = false,
 )
@@ -35,15 +32,12 @@ class InvoiceDetailViewModel(
     private val getDetail: GetInvoiceDetailUseCase,
     private val formPreferences: UserFormPreferencesUseCase,
     private val downloadAndSaveEInvoiceZip: DownloadAndSaveEInvoiceZipUseCase,
-    private val getEInvoiceView: GetEInvoiceViewUseCase,
     private val tokenRefresh: TokenRefreshCoordinator,
     private val invoiceId: Long,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(InvoiceDetailUiState())
     val state: StateFlow<InvoiceDetailUiState> = _state.asStateFlow()
-
-    private val eInvoiceCache = mutableMapOf<Long, EInvoiceData>()
 
     init {
         load()
@@ -71,7 +65,6 @@ class InvoiceDetailViewModel(
             result.fold(
                 onSuccess = { d ->
                     _state.update { it.copy(detail = d, isLoading = false) }
-                    loadEInvoiceView()
                 },
                 onFailure = { e ->
                     _state.update {
@@ -135,45 +128,6 @@ class InvoiceDetailViewModel(
 
     fun clearEInvoiceFeedback() {
         _state.update { it.copy(eInvoiceMessage = null, eInvoiceError = null) }
-    }
-
-    fun loadEInvoiceView() {
-        val baseUrl = formPreferences.getBaseUrl()
-        if (baseUrl.isBlank()) return
-
-        eInvoiceCache[invoiceId]?.let { cached ->
-            _state.update { it.copy(eInvoiceData = cached, isEInvoiceViewLoading = false) }
-            return
-        }
-
-        viewModelScope.launch {
-            _state.update { it.copy(isEInvoiceViewLoading = true, eInvoiceViewError = null) }
-            val result = withContext(Dispatchers.Default) { getEInvoiceView(baseUrl, invoiceId) }
-
-            if (isUnauthorized(result)) {
-                if (!tokenRefresh.tryRefresh()) {
-                    _state.update { it.copy(isEInvoiceViewLoading = false, sessionExpired = true) }
-                    return@launch
-                }
-                loadEInvoiceView()
-                return@launch
-            }
-
-            result.fold(
-                onSuccess = { data ->
-                    eInvoiceCache[invoiceId] = data
-                    _state.update { it.copy(eInvoiceData = data, isEInvoiceViewLoading = false) }
-                },
-                onFailure = { e ->
-                    _state.update {
-                        it.copy(
-                            isEInvoiceViewLoading = false,
-                            eInvoiceViewError = e.message ?: "Không tải được hóa đơn điện tử",
-                        )
-                    }
-                },
-            )
-        }
     }
 
     private fun isUnauthorized(result: Result<*>): Boolean =
