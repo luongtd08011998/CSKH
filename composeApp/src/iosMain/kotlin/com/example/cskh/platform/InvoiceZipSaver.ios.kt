@@ -6,14 +6,19 @@ import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
 import kotlin.random.Random
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import okio.Path.Companion.toPath
 import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSFileManager
+import platform.Foundation.NSURL
 import platform.Foundation.NSUserDomainMask
+import platform.UIKit.UIActivityViewController
+import platform.UIKit.UIApplication
 import platform.posix.fclose
 import platform.posix.fopen
 import platform.posix.fwrite
+import kotlin.coroutines.resume
 
 @OptIn(ExperimentalForeignApi::class)
 actual class InvoiceZipSaverImpl actual constructor() : InvoiceZipSaver {
@@ -55,13 +60,30 @@ actual class InvoiceZipSaverImpl actual constructor() : InvoiceZipSaver {
             }
         }
 
-        Result.success(
-            buildString {
-                appendLine("Tên file: ${zipPath.substringAfterLast('/')}")
-                append("Mở ứng dụng Files › On My iPhone › Downloads để xem.")
-            }.trim(),
-        )
+        // Bước 3: hiển thị share sheet để người dùng lưu vào Files / chia sẻ.
+        withContext(Dispatchers.Main) {
+            presentShareSheet(zipPath)
+        }
+
+        Result.success("Tải hóa đơn thành công.")
     }
+}
+
+/** Mở UIActivityViewController để người dùng chọn "Save to Files", AirDrop, email… */
+private suspend fun presentShareSheet(filePath: String) = suspendCancellableCoroutine<Unit> { cont ->
+    val fileUrl = NSURL.fileURLWithPath(filePath)
+    val vc = UIActivityViewController(activityItems = listOf(fileUrl), applicationActivities = null)
+
+    val rootVc = UIApplication.sharedApplication.keyWindow?.rootViewController
+    // Tìm topmost presented view controller
+    var topVc = rootVc
+    while (topVc?.presentedViewController != null) {
+        topVc = topVc.presentedViewController
+    }
+
+    topVc?.presentViewController(vc, animated = true) {
+        cont.resume(Unit)
+    } ?: cont.resume(Unit)
 }
 
 @OptIn(ExperimentalForeignApi::class)

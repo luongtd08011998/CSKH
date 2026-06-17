@@ -1,6 +1,8 @@
 import SwiftUI
 import ComposeApp
 import UserNotifications
+import FirebaseCore
+import FirebaseMessaging
 
 @main
 struct iOSApp: App {
@@ -13,11 +15,17 @@ struct iOSApp: App {
     }
 }
 
-class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate, MessagingDelegate {
     func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
+        // Khởi tạo Firebase
+        FirebaseApp.configure()
+
+        // Đặt delegate cho Messaging
+        Messaging.messaging().delegate = self
+
         UNUserNotificationCenter.current().delegate = self
 
         // If launched from a notification tap
@@ -33,7 +41,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         _ application: UIApplication,
         didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data
     ) {
-        // Token available for FCM/APNs backend registration if needed
+        // Chuyển APNs token cho Firebase → Firebase sẽ tạo FCM token
+        Messaging.messaging().apnsToken = deviceToken
+        print("APNs token received, forwarded to Firebase")
     }
 
     func application(
@@ -41,6 +51,17 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         didFailToRegisterForRemoteNotificationsWithError error: Error
     ) {
         print("Failed to register for remote notifications: \(error)")
+    }
+
+    // Firebase Messaging delegate — nhận FCM token
+    func messaging(
+        _ messaging: Messaging,
+        didReceiveRegistrationToken fcmToken: String?
+    ) {
+        guard let token = fcmToken, !token.isEmpty else { return }
+        print("FCM token received: \(token.prefix(20))...")
+        // Lưu token vào Kotlin bridge
+        IosFcmTokenBridgeKt.saveFcmToken(token: token)
     }
 
     // Foreground: show banner

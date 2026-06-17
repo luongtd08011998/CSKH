@@ -55,6 +55,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.filled.Policy
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
@@ -175,7 +179,6 @@ private fun CustomerProfileScrollContent(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(headerGradient)
-                .statusBarsPadding()
                 .padding(horizontal = 8.dp, vertical = 8.dp),
         ) {
             Row(
@@ -465,8 +468,33 @@ private fun ExtraInfoCard(profile: CustomerProfile) {
                 label = "Mã số thuế",
                 value = profile.taxCode,
                 emptyPlaceholder = true,
-                showDivider = false,
+                showDivider = true,
             )
+            
+            // Privacy Policy Link
+            val uriHandler = LocalUriHandler.current
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { uriHandler.openUri("https://sites.google.com/view/skh-cntoctien-privacy") }
+                    .padding(vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Surface(shape = RoundedCornerShape(12.dp), color = Color(0xFFE8F5E9)) {
+                    Icon(
+                        imageVector = Icons.Filled.Policy,
+                        contentDescription = null,
+                        modifier = Modifier.padding(10.dp).size(22.dp),
+                        tint = Color(0xFF2E7D32),
+                    )
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Chính sách bảo mật", style = MaterialTheme.typography.bodyLarge.copy(color = Color(0xFF212121), fontWeight = FontWeight.Medium))
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text("Xem quy định về bảo mật dữ liệu", style = MaterialTheme.typography.bodySmall.copy(color = Color(0xFF1976D2), textDecoration = TextDecoration.Underline))
+                }
+            }
         }
     }
 }

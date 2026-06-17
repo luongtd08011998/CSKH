@@ -16,6 +16,9 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.offset
@@ -60,6 +63,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -112,6 +116,10 @@ fun LoginScreen(
     val fieldShape = RoundedCornerShape(16.dp)
     val cardShape = RoundedCornerShape(28.dp)
 
+    // Phát hiện bàn phím (IME) mở để tự thu gọn header → toàn bộ form luôn nhìn thấy
+    val density = LocalDensity.current
+    val imeVisible = WindowInsets.ime.getBottom(density) > 0
+
     // Animation cho card khi đang loading
     val cardScale by animateFloatAsState(
         targetValue = if (state.isLoading) 0.97f else 1f,
@@ -161,24 +169,27 @@ fun LoginScreen(
                 .fillMaxSize()
                 .widthIn(max = 440.dp)
                 .align(Alignment.TopCenter)
+                .imePadding()
                 .verticalScroll(scrollState)
-                .statusBarsPadding()
-                .padding(top = 28.dp)
+                .padding(top = if (imeVisible) 2.dp else 4.dp)
                 .navigationBarsPadding()
                 .padding(horizontal = 16.dp)
-                .padding(bottom = 12.dp),
+                .padding(bottom = 32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            // Header tự thu gọn khi bàn phím mở (imeVisible) để nhường chỗ cho form
+            val logoBox = if (imeVisible) 52.dp else 72.dp
+            val logoImg = if (imeVisible) 44.dp else 64.dp
             Box(
-                modifier = Modifier.size(96.dp),
+                modifier = Modifier.size(logoBox),
                 contentAlignment = Alignment.Center,
             ) {
                 Image(
                     painter = painterResource(Res.drawable.logocty1),
                     contentDescription = null,
                     modifier = Modifier
-                        .size(86.dp)
-                        .shadow(elevation = 8.dp, shape = CircleShape)
+                        .size(logoImg)
+                        .shadow(elevation = if (imeVisible) 4.dp else 6.dp, shape = CircleShape)
                         .background(Color.White, shape = CircleShape)
                         .padding(3.dp)
                         .clip(CircleShape),
@@ -186,23 +197,29 @@ fun LoginScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(if (imeVisible) 6.dp else 8.dp))
             Text(
                 text = CompanyBranding.NAME,
-                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                style = if (imeVisible) {
+                    MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
+                } else {
+                    MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                },
                 color = Color(0xFF212121),
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = "Hệ thống quản lý khách hàng",
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFF757575),
-                textAlign = TextAlign.Center,
-            )
+            if (!imeVisible) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Hệ thống chăm sóc khách hàng",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFF757575),
+                    textAlign = TextAlign.Center,
+                )
+            }
 
-            Spacer(modifier = Modifier.height(36.dp))
+            Spacer(modifier = Modifier.height(if (imeVisible) 10.dp else 14.dp))
 
             Surface(
                 modifier = Modifier
@@ -213,27 +230,21 @@ fun LoginScreen(
                         rotationZ = if (state.isLoading) 0.5f else 0f
                     )
                     .shadow(
-                        elevation = if (state.isLoading) 4.dp else 12.dp,
+                        elevation = if (state.isLoading) 4.dp else 10.dp,
                         shape = cardShape,
                     ),
                 shape = cardShape,
                 color = Color.White,
             ) {
                 Column(
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 22.dp),
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = if (imeVisible) 12.dp else 18.dp),
                 ) {
                     Text(
                         text = "Đăng nhập",
-                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.SemiBold),
+                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
                         color = Color(0xFF212121),
                     )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = "Vui lòng nhập thông tin để tiếp tục",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFF757575),
-                    )
-                    Spacer(modifier = Modifier.height(22.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
 
                     Text(
                         text = "Mã khách hàng",
@@ -264,7 +275,7 @@ fun LoginScreen(
                         ),
                     )
 
-                    Spacer(modifier = Modifier.height(18.dp))
+                    Spacer(modifier = Modifier.height(14.dp))
                     Text(
                         text = "Số điện thoại",
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
@@ -309,7 +320,7 @@ fun LoginScreen(
                         ),
                     )
 
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -359,13 +370,13 @@ fun LoginScreen(
                         }
                     }
 
-                    Spacer(modifier = Modifier.height(20.dp))
+                    Spacer(modifier = Modifier.height(16.dp))
                     val canSubmit = state.digiCode.isNotBlank() && state.phone.isNotBlank()
                     Button(
                         onClick = { viewModel.login(onLoggedIn) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(54.dp),
+                            .height(48.dp),
                         enabled = canSubmit,
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.buttonColors(

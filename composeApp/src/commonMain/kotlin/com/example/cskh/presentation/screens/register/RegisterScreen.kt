@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -106,6 +107,7 @@ fun RegisterScreen(
                 Column(
                     modifier = Modifier
                         .weight(1f)
+                        .imePadding()
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = 20.dp)
                         .navigationBarsPadding()
@@ -351,7 +353,11 @@ fun RegisterScreen(
                                         modifier = Modifier.padding(end = 8.dp)
                                     )
                                     if (index == 0) {
-                                        Row {
+                                        Row(
+                                            modifier = Modifier
+                                                .clickable { uriHandler.openUri(TEMPLATE_URL) }
+                                                .padding(vertical = 6.dp),
+                                        ) {
                                             Text(
                                                 text = "Đơn xin lắp đặt (",
                                                 style = MaterialTheme.typography.bodySmall,
@@ -363,7 +369,6 @@ fun RegisterScreen(
                                                     color = primaryBlue,
                                                     textDecoration = TextDecoration.Underline
                                                 ),
-                                                modifier = Modifier.clickable { uriHandler.openUri(TEMPLATE_URL) }
                                             )
                                             Text(
                                                 text = ")",

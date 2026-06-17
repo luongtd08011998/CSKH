@@ -4,15 +4,14 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-	</dict>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Cho phép truy cập thư viện ảnh để đính kèm hình ảnh phản ánh.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Cho phép sử dụng camera để chụp ảnh phản ánh.</string>
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

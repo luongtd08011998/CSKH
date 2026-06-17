@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.example.cskh.util.mapApiErrorToVietnamese
 
 data class RegisterUiState(
     val name: String = "",
@@ -45,6 +46,15 @@ class RegisterViewModel(
             return
         }
 
+        val emailTrimmed = s.email.trim()
+        if (emailTrimmed.isNotBlank()) {
+            val emailRegex = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
+            if (!emailRegex.matches(emailTrimmed)) {
+                _state.update { it.copy(errorMessage = "Email không hợp lệ. Vui lòng nhập đúng định dạng (ví dụ: ten@gmail.com)") }
+                return
+            }
+        }
+
         viewModelScope.launch {
             _state.update { it.copy(isSubmitting = true, errorMessage = null, registrationTime = null) }
             registerRepository.submitRegistration(
@@ -65,7 +75,7 @@ class RegisterViewModel(
                     )
                 },
                 onFailure = { e ->
-                    _state.update { it.copy(isSubmitting = false, errorMessage = e.message ?: "Đăng ký thất bại") }
+                    _state.update { it.copy(isSubmitting = false, errorMessage = mapApiErrorToVietnamese(e.message)) }
                 },
             )
         }

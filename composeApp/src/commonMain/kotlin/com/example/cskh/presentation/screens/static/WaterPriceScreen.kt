@@ -78,6 +78,7 @@ fun WaterPriceScreen(onBack: () -> Unit) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại")
                     }
                 },
+                windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
             )
         },
         containerColor = Color.Transparent,
@@ -158,7 +159,6 @@ private fun HeaderWaterPrice() {
             modifier = Modifier
                 .fillMaxWidth()
                 .background(Brush.horizontalGradient(colors = listOf(headerBlueStart, headerBlueEnd)))
-                .statusBarsPadding()
                 .padding(horizontal = 16.dp, vertical = 16.dp),
         ) {
             Row(

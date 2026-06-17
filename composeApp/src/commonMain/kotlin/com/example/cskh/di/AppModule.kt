@@ -43,11 +43,13 @@ import com.example.cskh.domain.usecase.RefreshTokenUseCase
 import com.example.cskh.domain.usecase.RegisterFcmDeviceUseCase
 import com.example.cskh.domain.usecase.UnregisterFcmDeviceUseCase
 import com.example.cskh.domain.usecase.UserFormPreferencesUseCase
+import com.example.cskh.platform.AppIconBadge
 import com.example.cskh.platform.BinaryGetDownloader
 import com.example.cskh.platform.InvoiceZipSaver
 import com.example.cskh.platform.InvoiceZipSaverImpl
 import com.example.cskh.platform.QrPngSaver
 import com.example.cskh.platform.QrPngSaverImpl
+import com.example.cskh.platform.createAppIconBadge
 import com.example.cskh.platform.createBinaryGetDownloader
 import com.example.cskh.presentation.screens.customer.CustomerProfileViewModel
 import com.example.cskh.presentation.screens.home.HomeViewModel
@@ -72,6 +74,7 @@ val appModule = module {
     single { JsonConfig.json }
     single<HttpClient> { createAppHttpClient(get()) }
     single<BinaryGetDownloader> { createBinaryGetDownloader() }
+    single<AppIconBadge> { createAppIconBadge() }
     single<Settings> { Settings() }
     single<UserFormStore> { UserPreferences(get()) }
 
@@ -113,7 +116,7 @@ val appModule = module {
     single { GetFeaturedArticlesUseCase(get()) }
     single { MarkNotificationsReadUseCase(get()) }
     single { BackfillReferenceIdUseCase(get()) }
-    single { NotificationBadgeStore(get(), get()) }
+    single { NotificationBadgeStore(get(), get(), get()) }
     single { CreateFeedbackUseCase(get(), get()) }
     single { GetFeedbacksUseCase(get(), get()) }
     single { GetFeedbackDetailUseCase(get(), get()) }

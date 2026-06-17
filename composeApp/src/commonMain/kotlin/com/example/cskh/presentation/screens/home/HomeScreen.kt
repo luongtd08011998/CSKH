@@ -287,7 +287,6 @@ private fun HomeHero(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(heroGradient)
-                .statusBarsPadding()
                 .padding(horizontal = 16.dp, vertical = 18.dp),
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
@@ -361,21 +360,19 @@ private fun HomeHero(
                             overflow = TextOverflow.Ellipsis,
                         )
                         Spacer(Modifier.height(10.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(14.dp),
-                        ) {
-                            Text(
-                                text = "Mã KH: ${customer?.digiCode ?: "—"}",
-                                style = MaterialTheme.typography.bodyMedium.copy(color = Color.White.copy(alpha = 0.9f)),
-                            )
-                            Text(
-                                text = "Địa chỉ: ${customer?.address ?: "—"}",
-                                style = MaterialTheme.typography.bodyMedium.copy(color = Color.White.copy(alpha = 0.9f)),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
+                        Text(
+                            text = "Mã KH: ${customer?.digiCode ?: "—"}",
+                            style = MaterialTheme.typography.bodyMedium.copy(color = Color.White.copy(alpha = 0.9f)),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = "Địa chỉ: ${customer?.address ?: "—"}",
+                            style = MaterialTheme.typography.bodyMedium.copy(color = Color.White.copy(alpha = 0.9f)),
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
                     }
                 }
             }

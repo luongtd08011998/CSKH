@@ -92,6 +92,7 @@ fun AboutScreen(onBack: () -> Unit) {
                         )
                     }
                 },
+                windowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
             )
         },
         containerColor = Color.Transparent,
@@ -113,7 +114,6 @@ fun AboutScreen(onBack: () -> Unit) {
                         .background(
                             Brush.horizontalGradient(colors = listOf(headerBlueStart, headerBlueEnd)),
                         )
-                        .statusBarsPadding()
                         .padding(horizontal = 18.dp, vertical = 18.dp),
                 ) {
                     Row(
@@ -293,7 +293,6 @@ private fun ContactRow(
             text = "Mở",
             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
             color = Color(0xFF1976D2),
-            modifier = Modifier.clickable { onClick() },
         )
     }
 }

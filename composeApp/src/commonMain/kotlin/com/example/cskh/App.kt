@@ -3,6 +3,17 @@ package com.example.cskh
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.Alignment
 import androidx.compose.material3.Surface
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -250,8 +261,7 @@ private fun MainNavHost(
                 navController = navController,
                 startDestination = startDestination,
                 modifier = Modifier
-                    .fillMaxSize()
-                    .navigationBarsPadding(),
+                    .fillMaxSize(),
             ) {
                 composable<Screen.Login> {
                     LoginScreen(
@@ -409,42 +419,52 @@ private fun AppBottomBar(
     val selectedProfile =
         currentDestination?.hierarchy?.any { it.route?.contains("CustomerProfile") == true } == true
 
-    NavigationBar(
-        containerColor = Color.White,
-        modifier = Modifier.navigationBarsPadding(),
+    androidx.compose.material3.Surface(
+        color = Color.White,
+        shadowElevation = 8.dp,
     ) {
-        NavigationBarItem(
-            selected = selectedHome,
-            onClick = onSelectHome,
-            icon = { Icon(Icons.Filled.Home, contentDescription = null) },
-            label = { Text("Trang chủ") },
-        )
-        NavigationBarItem(
-            selected = selectedNotifications,
-            onClick = onSelectNotifications,
-            icon = {
-                BadgedBox(
-                    badge = {
-                        if (unreadNotificationCount > 0) {
-                            Badge {
-                                Text(
-                                    text = if (unreadNotificationCount > 99) "99+" else unreadNotificationCount.toString(),
-                                    textAlign = TextAlign.Center,
-                                )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .windowInsetsPadding(WindowInsets.navigationBars)
+                .height(60.dp)
+                .selectableGroup(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            NavigationBarItem(
+                selected = selectedHome,
+                onClick = onSelectHome,
+                icon = { Icon(Icons.Filled.Home, contentDescription = null, modifier = Modifier.size(24.dp)) },
+                label = { Text("Trang chủ") },
+            )
+            NavigationBarItem(
+                selected = selectedNotifications,
+                onClick = onSelectNotifications,
+                icon = {
+                    BadgedBox(
+                        badge = {
+                            if (unreadNotificationCount > 0) {
+                                Badge {
+                                    Text(
+                                        text = if (unreadNotificationCount > 99) "99+" else unreadNotificationCount.toString(),
+                                        textAlign = TextAlign.Center,
+                                    )
+                                }
                             }
-                        }
-                    },
-                ) {
-                    Icon(Icons.Filled.Notifications, contentDescription = null)
-                }
-            },
-            label = { Text("Thông báo") },
-        )
-        NavigationBarItem(
-            selected = selectedProfile,
-            onClick = onSelectProfile,
-            icon = { Icon(Icons.Filled.Person, contentDescription = null) },
-            label = { Text("Tài khoản") },
-        )
+                        },
+                    ) {
+                        Icon(Icons.Filled.Notifications, contentDescription = null, modifier = Modifier.size(24.dp))
+                    }
+                },
+                label = { Text("Thông báo") },
+            )
+            NavigationBarItem(
+                selected = selectedProfile,
+                onClick = onSelectProfile,
+                icon = { Icon(Icons.Filled.Person, contentDescription = null, modifier = Modifier.size(24.dp)) },
+                label = { Text("Tài khoản") },
+            )
+        }
     }
 }

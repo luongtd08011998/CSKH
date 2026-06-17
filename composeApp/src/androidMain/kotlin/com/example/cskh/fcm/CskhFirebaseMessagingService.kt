@@ -109,6 +109,7 @@ class CskhFirebaseMessagingService : FirebaseMessagingService() {
             .setStyle(NotificationCompat.BigTextStyle().bigText(body.ifBlank { url }))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
+            .setNumber(1)
             .setContentIntent(contentIntent)
             .build()
 
@@ -140,6 +141,7 @@ class CskhFirebaseMessagingService : FirebaseMessagingService() {
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
+            .setNumber(1)
             .setContentIntent(contentIntent)
             .build()
 
@@ -172,6 +174,7 @@ class CskhFirebaseMessagingService : FirebaseMessagingService() {
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
+            .setNumber(1)
             .setContentIntent(contentIntent)
             .build()
 
@@ -207,6 +210,7 @@ class CskhFirebaseMessagingService : FirebaseMessagingService() {
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
+            .setNumber(1)
             .setContentIntent(contentIntent)
             .build()
 
@@ -234,6 +238,7 @@ class CskhFirebaseMessagingService : FirebaseMessagingService() {
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
+            .setNumber(1)
             .setContentIntent(contentIntent)
             .build()
 
@@ -261,6 +266,7 @@ class CskhFirebaseMessagingService : FirebaseMessagingService() {
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)
+            .setNumber(1)
             .setContentIntent(contentIntent)
             .build()
 

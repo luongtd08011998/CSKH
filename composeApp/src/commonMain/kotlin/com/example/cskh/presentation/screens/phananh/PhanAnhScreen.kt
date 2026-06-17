@@ -9,15 +9,19 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -60,6 +64,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.example.cskh.platform.PickedImage
 import com.example.cskh.platform.rememberImagePicker
@@ -136,6 +141,7 @@ fun PhanAnhScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại")
                     }
                 },
+                windowInsets = WindowInsets(0),
             )
         },
         containerColor = Color.Transparent,
@@ -297,6 +303,7 @@ private fun FormState(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .imePadding()
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(14.dp),
@@ -351,6 +358,7 @@ private fun FormState(
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text("Nhập địa chỉ cụ thể") },
                 singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             )
             Spacer(Modifier.height(6.dp))
             Text(
@@ -368,6 +376,7 @@ private fun FormState(
                     .fillMaxWidth()
                     .height(140.dp),
                 placeholder = { Text("Mô tả tình trạng, thời gian xảy ra, ảnh hưởng...") },
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
             )
         }
 

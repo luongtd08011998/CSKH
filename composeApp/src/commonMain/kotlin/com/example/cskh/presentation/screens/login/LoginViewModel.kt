@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.example.cskh.util.mapApiErrorToVietnamese
 
 data class LoginUiState(
     val digiCode: String = "",
@@ -84,7 +85,13 @@ class LoginViewModel(
                     formPreferences.saveAccessToken(accessToken)
                     formPreferences.saveRefreshToken(refreshToken)
                     sessionManager.setToken(accessToken, refreshToken)
-                    fcmDeviceSync.registerIfLoggedIn()
+                    launch {
+                        try {
+                            fcmDeviceSync.registerIfLoggedIn()
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
+                    }
                     _state.update { it.copy(isLoading = false, isSlowConnection = false) }
                     onSuccess()
                 },
@@ -93,7 +100,7 @@ class LoginViewModel(
                         it.copy(
                             isLoading = false, 
                             isSlowConnection = false,
-                            errorMessage = e.message ?: "Đăng nhập thất bại"
+                            errorMessage = mapApiErrorToVietnamese(e.message)
                         )
                     }
                 },

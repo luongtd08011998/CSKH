@@ -468,7 +468,6 @@ private fun DetailHeader(
                     colors = listOf(headerBlueStart, headerBlueEnd),
                 ),
             )
-            .statusBarsPadding()
             .padding(bottom = 20.dp),
     ) {
         Row(

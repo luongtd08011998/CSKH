@@ -114,6 +114,7 @@ fun FeedbackNotificationScreen(
                     containerColor = Color(0xFFEF6C00),   // Màu cam - nhất quán với icon Phản ánh
                     titleContentColor = Color.White,
                 ),
+                windowInsets = WindowInsets(0, 0, 0, 0),
             )
         },
     ) { paddingValues ->
