@@ -107,11 +107,11 @@ fun RegisterScreen(
                 Column(
                     modifier = Modifier
                         .weight(1f)
-                        .imePadding()
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = 20.dp)
                         .navigationBarsPadding()
-                        .padding(bottom = 24.dp),
+                        .padding(bottom = 24.dp)
+                        .imePadding(),
                 ) {
                     Text(
                         text = "Đăng Ký Lắp Đặt Nước Sạch",

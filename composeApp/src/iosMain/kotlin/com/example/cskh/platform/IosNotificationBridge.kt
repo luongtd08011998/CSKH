@@ -4,12 +4,15 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
 
 internal object IosNotificationBridge {
-    internal val _pendingArticleTitle: MutableState<String?> = mutableStateOf(null)
-    internal val _pendingArticleContent: MutableState<String?> = mutableStateOf(null)
-    internal val _pendingFeedbackId: MutableState<Long?> = mutableStateOf(null)
-    internal val _pendingInvoiceId: MutableState<Long?> = mutableStateOf(null)
-    internal val _pendingNavigateTo: MutableState<String?> = mutableStateOf(null)
+    // Public MutableState — được dùng với `by` delegate trong MainViewController
+    // để Compose tự động recompose khi Bridge được cập nhật từ Swift.
+    val _pendingArticleTitle: MutableState<String?> = mutableStateOf(null)
+    val _pendingArticleContent: MutableState<String?> = mutableStateOf(null)
+    val _pendingFeedbackId: MutableState<Long?> = mutableStateOf(null)
+    val _pendingInvoiceId: MutableState<Long?> = mutableStateOf(null)
+    val _pendingNavigateTo: MutableState<String?> = mutableStateOf(null)
 
+    // Computed properties tiện lợi cho các caller không dùng Compose delegate
     val pendingArticleTitle: String? get() = _pendingArticleTitle.value
     val pendingArticleContent: String? get() = _pendingArticleContent.value
     val pendingFeedbackId: Long? get() = _pendingFeedbackId.value
@@ -50,3 +53,4 @@ fun setIosNotificationData(
         articleTitle, articleContent, feedbackId, invoiceId, navigateTo
     )
 }
+

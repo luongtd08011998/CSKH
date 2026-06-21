@@ -169,12 +169,12 @@ fun LoginScreen(
                 .fillMaxSize()
                 .widthIn(max = 440.dp)
                 .align(Alignment.TopCenter)
-                .imePadding()
                 .verticalScroll(scrollState)
                 .padding(top = if (imeVisible) 2.dp else 4.dp)
                 .navigationBarsPadding()
                 .padding(horizontal = 16.dp)
-                .padding(bottom = 32.dp),
+                .padding(bottom = 32.dp)
+                .imePadding(),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // Header tự thu gọn khi bàn phím mở (imeVisible) để nhường chỗ cho form

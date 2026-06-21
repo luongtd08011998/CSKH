@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.selection.selectableGroup
@@ -70,6 +72,7 @@ import com.example.cskh.presentation.screens.static.AboutScreen
 import com.example.cskh.presentation.screens.register.RegisterScreen
 import com.example.cskh.presentation.screens.static.WaterPriceScreen
 import com.example.cskh.presentation.theme.CskhTheme
+import com.example.cskh.platform.FcmDeviceSync
 import com.example.cskh.platform.NotificationPermissionGate
 import com.example.cskh.util.NavigationEvent
 import com.example.cskh.util.PushNavigationBus
@@ -120,8 +123,13 @@ private fun MainNavHost(
     val sessionManager = koinInject<SessionManager>()
     val notificationBadgeStore = koinInject<NotificationBadgeStore>()
     val pushNavigationBus = koinInject<PushNavigationBus>()
+    val fcmDeviceSync = koinInject<FcmDeviceSync>()
     val unreadNotificationCount by notificationBadgeStore.unreadCount.collectAsState()
     val navController = rememberNavController()
+
+    LaunchedEffect(Unit) {
+        fcmDeviceSync.registerIfLoggedIn()
+    }
 
     // ── Giai đoạn 1: Splash Screen ──
     var showSplash by remember { mutableStateOf(true) }
@@ -152,6 +160,7 @@ private fun MainNavHost(
             navController.navigate(
                 Screen.ArticleDetail(title = pendingArticleTitle, content = pendingArticleContent)
             )
+            onNavigationHandled()
         }
     }
 
@@ -251,7 +260,7 @@ private fun MainNavHost(
         },
         modifier = Modifier.fillMaxSize(),
     ) { innerPadding ->
-        Surface(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+        Surface(modifier = Modifier.fillMaxSize().padding(innerPadding).consumeWindowInsets(innerPadding)) {
             val onLogout = {
                 navController.navigate(Screen.Login) {
                     popUpTo(0) { inclusive = true }
