@@ -34,7 +34,45 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         }
 
         requestNotificationAuthorization()
+
+        // Lắng nghe notification từ Kotlin để present UIActivityViewController
+        // (Kotlin/Native không thể set popoverPresentationController.sourceView trực tiếp)
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("CskhPresentShareSheet"),
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let filePath = notification.userInfo?["filePath"] as? String else { return }
+            self?.presentShareSheet(filePath: filePath)
+        }
+
         return true
+    }
+
+    private func presentShareSheet(filePath: String) {
+        let fileUrl = URL(fileURLWithPath: filePath)
+        let activityVC = UIActivityViewController(activityItems: [fileUrl], applicationActivities: nil)
+
+        // Tìm topmost view controller
+        guard let rootVC = UIApplication.shared.windows.first?.rootViewController else { return }
+        var topVC = rootVC
+        while let presented = topVC.presentedViewController {
+            topVC = presented
+        }
+
+        // Trên iPad bắt buộc phải set sourceView cho popover, nếu không iOS sẽ crash
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            activityVC.popoverPresentationController?.sourceView = topVC.view
+            activityVC.popoverPresentationController?.sourceRect = CGRect(
+                x: topVC.view.bounds.midX,
+                y: topVC.view.bounds.midY,
+                width: 0,
+                height: 0
+            )
+            activityVC.popoverPresentationController?.permittedArrowDirections = []
+        }
+
+        topVC.present(activityVC, animated: true)
     }
 
     func application(
@@ -72,6 +110,15 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         print("FCM token received: \(token.prefix(20))...")
         // Lưu token vào Kotlin bridge
         IosFcmTokenBridgeKt.saveFcmToken(token: token)
+
+        // Đăng ký topic để nhận thông báo tin nổi bật (giống Android)
+        Messaging.messaging().subscribe(toTopic: "general_news") { error in
+            if let error = error {
+                print("FCM subscribe general_news error: \(error)")
+            } else {
+                print("FCM subscribed to general_news OK")
+            }
+        }
     }
 
     // Foreground: show banner

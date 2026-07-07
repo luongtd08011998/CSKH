@@ -23,6 +23,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.yield
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -37,8 +41,12 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Badge
+import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.foundation.Image
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -70,6 +78,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.cskh.domain.model.CustomerProfile
 import com.example.cskh.domain.model.InvoiceDetail
 import com.example.cskh.domain.model.InvoiceSummary
@@ -84,6 +93,11 @@ import com.example.cskh.util.formatVnd
 import org.jetbrains.compose.resources.painterResource
 import cskh.composeapp.generated.resources.Res
 import cskh.composeapp.generated.resources.logocty1
+import cskh.composeapp.generated.resources.banner_1
+import cskh.composeapp.generated.resources.banner_2
+import cskh.composeapp.generated.resources.banner_3
+import cskh.composeapp.generated.resources.banner_4
+import cskh.composeapp.generated.resources.banner_5
 
 private val pageBackground = Color(0xFFF5F7FA)
 private val bannerBlue = Color(0xFF1976D2)
@@ -212,49 +226,32 @@ fun HomeScreen(
                             onOpenProfile = onNavigateCustomerProfile,
                         )
 
-                        Box {
-                            Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                                Spacer(modifier = Modifier.height(0.dp))
-                            }
-                            Box(
-                                modifier = Modifier
-                                    .padding(horizontal = 16.dp)
-                                    .padding(top = 0.dp)
-                                    .offset(y = (-24).dp),
-                            ) {
-                                val newest = state.recentInvoices.firstOrNull()
-                                CurrentInvoiceCard(
-                                    invoice = newest,
-                                    detail = state.currentInvoiceDetail,
-                                    onThanhToanNgay = {
-                                        newest?.id?.let { onNavigateInvoiceDetail(it) } ?: onNavigateInvoices()
-                                    },
-                                    onXemChiTiet = {
-                                        newest?.id?.let { onNavigateInvoiceDetail(it) } ?: onNavigateInvoices()
-                                    },
-                                    onTraCuuHoaDon = onNavigateInvoices,
-                                )
-                            }
+
+                        Box(
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp)
+                                .padding(bottom = 8.dp)
+                        ) {
+                            val newest = state.recentInvoices.firstOrNull()
+                            CurrentInvoiceCard(
+                                invoice = newest,
+                                detail = state.currentInvoiceDetail,
+                                onThanhToanNgay = {
+                                    newest?.id?.let { onNavigateInvoiceDetail(it) } ?: onNavigateInvoices()
+                                },
+                                onXemChiTiet = {
+                                    newest?.id?.let { onNavigateInvoiceDetail(it) } ?: onNavigateInvoices()
+                                },
+                                onTraCuuHoaDon = onNavigateInvoices,
+                            )
                         }
 
-                        Spacer(modifier = Modifier.height(0.dp))
+                        CompanyBannerCarousel()
+                        Spacer(modifier = Modifier.height(16.dp))
 
                         Column(modifier = Modifier.padding(horizontal = 16.dp)) {
-                            Spacer(modifier = Modifier.height(18.dp))
-                            Text(
-                                text = "Menu chức năng",
-                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                                color = Color(0xFF212121),
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
                             MenuGrid(items = menu)
-
-                            Spacer(modifier = Modifier.height(18.dp))
-                            RecentInvoicesSection(
-                                invoices = state.recentInvoices.take(3),
-                                onViewAll = onNavigateInvoices,
-                            )
-
                             Spacer(modifier = Modifier.height(18.dp))
                         }
                     }
@@ -280,99 +277,105 @@ private fun HomeHero(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp),
-        color = Color.Transparent,
+        shape = RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp),
+        shadowElevation = 8.dp,
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(heroGradient)
-                .padding(horizontal = 16.dp, vertical = 18.dp),
+                .background(Brush.linearGradient(listOf(Color(0xFF0D47A1), Color(0xFF0288D1))))
+                .padding(horizontal = 24.dp, vertical = 8.dp),
         ) {
             Column(modifier = Modifier.fillMaxWidth()) {
+                // Top Left: Logo + Company Name
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    Surface(
+                        modifier = Modifier.size(42.dp),
+                        shape = CircleShape,
+                        color = Color.White,
+                        shadowElevation = 2.dp,
                     ) {
-                        Surface(
-                            modifier = Modifier.size(54.dp),
-                            shape = CircleShape,
-                            color = Color.White,
-                            shadowElevation = 6.dp,
-                        ) {
-                            Image(
-                                painter = painterResource(Res.drawable.logocty1),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .padding(2.dp)
-                                    .clip(CircleShape),
-                                contentScale = ContentScale.Crop,
-                            )
-                        }
-                        Column {
-                            Text(
-                                text = "Công ty TNHH",
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    color = Color.White.copy(alpha = 0.9f),
-                                ),
-                            )
-                            Text(
-                                text = companyName.replace("Công ty TNHH ", ""),
-                                style = MaterialTheme.typography.titleLarge.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    color = Color.White,
-                                ),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
+                        Image(
+                            painter = painterResource(Res.drawable.logocty1),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(4.dp)
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop,
+                        )
                     }
-
+                    Column {
+                        Text(
+                            text = "Công ty TNHH",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                color = Color.White.copy(alpha = 0.8f),
+                                fontWeight = FontWeight.Medium
+                            ),
+                        )
+                        Text(
+                            text = companyName.replace("Công ty TNHH ", ""),
+                            style = MaterialTheme.typography.titleLarge.copy(
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                            ),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
                 }
+                Spacer(Modifier.height(10.dp))
 
-                Spacer(Modifier.height(14.dp))
+                // Customer Card
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable(onClick = onOpenProfile),
                     shape = RoundedCornerShape(18.dp),
-                    color = Color.White.copy(alpha = 0.12f),
+                    color = Color.White.copy(alpha = 0.15f),
                 ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        Text(
-                            text = "Khách hàng",
-                            style = MaterialTheme.typography.labelLarge.copy(color = Color.White.copy(alpha = 0.9f)),
-                        )
-                        Spacer(Modifier.height(6.dp))
-                        Text(
-                            text = customer?.name ?: "—",
-                            style = MaterialTheme.typography.titleLarge.copy(
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                            ),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Spacer(Modifier.height(10.dp))
-                        Text(
-                            text = "Mã KH: ${customer?.digiCode ?: "—"}",
-                            style = MaterialTheme.typography.bodyMedium.copy(color = Color.White.copy(alpha = 0.9f)),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = "Địa chỉ: ${customer?.address ?: "—"}",
-                            style = MaterialTheme.typography.bodyMedium.copy(color = Color.White.copy(alpha = 0.9f)),
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis,
-                        )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = "Xin chào, ",
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Medium,
+                                        color = Color.White.copy(alpha = 0.8f)
+                                    )
+                                )
+                                Text(
+                                    text = customer?.name ?: "—",
+                                    style = MaterialTheme.typography.titleLarge.copy(
+                                        fontSize = 18.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White
+                                    ),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                            Text(
+                                text = "Mã KH: ${customer?.digiCode ?: "—"}",
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color.White.copy(alpha = 0.9f)
+                                ),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     }
                 }
             }
@@ -423,122 +426,200 @@ private fun CurrentInvoiceCard(
         else -> Color(0xFFE65100)
     }
 
-    val monthText = remember(detail?.yearMonth) { detail?.yearMonth.toMonthYearDisplay() }
-    val dueText = remember(detail?.endDate) { detail?.endDate.toDateDisplay() }
+    val monthText = remember(invoice?.yearMonth, detail?.yearMonth) { 
+        (detail?.yearMonth ?: invoice?.yearMonth).orEmpty().toMonthYearDisplay() 
+    }
+    
+    val dueText = remember(detail?.endDate, invoice?.yearMonth) {
+        val detailEnd = detail?.endDate.toDateDisplay()
+        if (detailEnd.isNotBlank()) detailEnd else {
+            val ym = invoice?.yearMonth?.trim() ?: ""
+            val year = when {
+                Regex("\\d{4}-\\d{2}").matches(ym.take(7)) -> ym.substring(0, 4).toIntOrNull() ?: 0
+                Regex("\\d{6}").matches(ym.take(6)) -> ym.substring(0, 4).toIntOrNull() ?: 0
+                else -> 0
+            }
+            val month = when {
+                Regex("\\d{4}-\\d{2}").matches(ym.take(7)) -> ym.substring(5, 7).toIntOrNull() ?: 0
+                Regex("\\d{6}").matches(ym.take(6)) -> ym.substring(4, 6).toIntOrNull() ?: 0
+                else -> 0
+            }
+            if (year > 0 && month > 0) {
+                val nextMonth = if (month == 12) 1 else month + 1
+                val nextYear = if (month == 12) year + 1 else year
+                "07/${nextMonth.toString().padStart(2, '0')}/$nextYear"
+            } else ""
+        }
+    }
+
+    val periodText = remember(detail?.startDate, detail?.endDate, invoice?.yearMonth) {
+        val startStr = detail?.startDate.toDateDisplay()
+        val endStr = detail?.endDate.toDateDisplay()
+        if (startStr.isNotBlank() && endStr.isNotBlank()) {
+            "${startStr.take(5)} - ${endStr.take(5)}"
+        } else {
+            val ym = invoice?.yearMonth?.trim() ?: ""
+            val year = when {
+                Regex("\\d{4}-\\d{2}").matches(ym.take(7)) -> ym.substring(0, 4).toIntOrNull() ?: 0
+                Regex("\\d{6}").matches(ym.take(6)) -> ym.substring(0, 4).toIntOrNull() ?: 0
+                else -> 0
+            }
+            val month = when {
+                Regex("\\d{4}-\\d{2}").matches(ym.take(7)) -> ym.substring(5, 7).toIntOrNull() ?: 0
+                Regex("\\d{6}").matches(ym.take(6)) -> ym.substring(4, 6).toIntOrNull() ?: 0
+                else -> 0
+            }
+            if (year > 0 && month > 0) {
+                val daysInMonth = when (month) {
+                    2 -> if (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) 29 else 28
+                    4, 6, 9, 11 -> 30
+                    else -> 31
+                }
+                "01/${month.toString().padStart(2, '0')} - $daysInMonth/${month.toString().padStart(2, '0')}"
+            } else "—"
+        }
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = cardShadow),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
-        Row(modifier = Modifier.fillMaxWidth()) {
-            Box(
-                modifier = Modifier
-                    .width(4.dp)
-                    .fillMaxSize()
-                    .background(Color(0xFF1565C0)),
-            )
-            Column(modifier = Modifier.padding(16.dp).weight(1f)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Text(
-                        text = if (monthText.isNotBlank()) "Hóa đơn tháng $monthText" else "Hóa đơn tháng hiện tại",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFF607D8B),
-                    )
-                    if (invoice != null) {
-                        Surface(
-                            color = statusBg,
-                            shape = RoundedCornerShape(999.dp),
-                        ) {
-                            Text(
-                                text = statusText,
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                                color = statusColor,
-                            )
-                        }
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp).fillMaxWidth()) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = if (monthText.isNotBlank()) "Hóa đơn tháng $monthText" else "Hóa đơn tháng hiện tại",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color(0xFF607D8B),
+                )
+                if (invoice != null) {
+                    Surface(
+                        color = statusBg,
+                        shape = RoundedCornerShape(999.dp),
+                    ) {
+                        Text(
+                            text = statusText,
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = statusColor,
+                        )
                     }
                 }
-                Spacer(Modifier.height(4.dp))
+            }
+            Row(
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
                 Text(
-                    text = invoice?.totalAmount?.formatVnd() ?: "—",
-                    style = MaterialTheme.typography.displaySmall.copy(
+                    text = invoice?.totalAmount?.formatVnd()?.replace(" đ", "₫")?.replace(" VNĐ", "₫") ?: "—",
+                    style = MaterialTheme.typography.headlineMedium.copy(
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1F2933),
+                        color = Color(0xFF1976D2), // Primary Blue
                     ),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.fillMaxWidth()
                 )
+            }
 
-                if (invoice != null) {
-                    Spacer(Modifier.height(10.dp))
-                    if (dueText.isNotBlank()) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Schedule,
-                                contentDescription = null,
-                                tint = Color(0xFFE65100),
-                                modifier = Modifier.size(18.dp),
-                            )
-                            Text(
-                                text = "Hạn thanh toán: $dueText",
-                                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                                color = Color(0xFFE65100),
-                            )
+            if (invoice != null) {
+                Spacer(Modifier.height(6.dp))
+                
+                // Dashed Divider 1
+                androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxWidth().height(1.dp)) {
+                    drawLine(
+                        color = Color(0xFFCFD8DC),
+                        start = androidx.compose.ui.geometry.Offset(0f, 0f),
+                        end = androidx.compose.ui.geometry.Offset(size.width, 0f),
+                        strokeWidth = 2f,
+                        pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(16f, 16f), 0f)
+                    )
+                }
+                
+                Spacer(Modifier.height(6.dp))
+                
+                // Rows
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    // Lượng nước tiêu thụ
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Surface(shape = CircleShape, color = Color(0xFFE3F2FD), modifier = Modifier.size(28.dp)) {
+                                Box(contentAlignment = Alignment.Center) { Icon(Icons.Filled.WaterDrop, contentDescription = null, tint = Color(0xFF1976D2), modifier = Modifier.size(14.dp)) }
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            Text("Lượng nước tiêu thụ", style = MaterialTheme.typography.bodyMedium.copy(color = Color(0xFF607D8B)))
                         }
-                        Spacer(Modifier.height(10.dp))
-                        HorizontalDivider(color = Color(0xFFEEF2F6))
-                        Spacer(Modifier.height(10.dp))
+                        Text("${kotlin.math.max(invoice.newVal - invoice.oldVal, 0)} m³", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Color(0xFF1F2933)))
                     }
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Lượng nước tiêu thụ",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Color(0xFF607D8B),
-                            )
-                            Text(
-                                text = "${kotlin.math.max(invoice.newVal - invoice.oldVal, 0)} m³",
-                                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                                color = Color(0xFF1F2933),
-                            )
+                    
+                    // Hạn thanh toán
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Surface(shape = CircleShape, color = Color(0xFFFFF3E0), modifier = Modifier.size(28.dp)) {
+                                Box(contentAlignment = Alignment.Center) { Icon(Icons.Filled.CalendarMonth, contentDescription = null, tint = Color(0xFFE65100), modifier = Modifier.size(14.dp)) }
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            Text("Hạn thanh toán", style = MaterialTheme.typography.bodyMedium.copy(color = Color(0xFF607D8B)))
                         }
+                        Text(if (dueText.isNotBlank()) dueText else "—", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Color(0xFF1F2933)))
+                    }
+                    
+                    // Kỳ ghi chỉ số
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Surface(shape = CircleShape, color = Color(0xFFE8F5E9), modifier = Modifier.size(28.dp)) {
+                                Box(contentAlignment = Alignment.Center) { Icon(Icons.Filled.Receipt, contentDescription = null, tint = Color(0xFF2E7D32), modifier = Modifier.size(14.dp)) }
+                            }
+                            Spacer(Modifier.width(12.dp))
+                            Text("Kỳ ghi chỉ số", style = MaterialTheme.typography.bodyMedium.copy(color = Color(0xFF607D8B)))
+                        }
+                        Text(periodText, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, color = Color(0xFF1F2933)))
                     }
                 }
+                
+                Spacer(Modifier.height(6.dp))
+                
+                // Dashed Divider 2
+                androidx.compose.foundation.Canvas(modifier = Modifier.fillMaxWidth().height(1.dp)) {
+                    drawLine(
+                        color = Color(0xFFCFD8DC),
+                        start = androidx.compose.ui.geometry.Offset(0f, 0f),
+                        end = androidx.compose.ui.geometry.Offset(size.width, 0f),
+                        strokeWidth = 2f,
+                        pathEffect = androidx.compose.ui.graphics.PathEffect.dashPathEffect(floatArrayOf(16f, 16f), 0f)
+                    )
+                }
+            }
 
-                Spacer(Modifier.height(14.dp))
-                val primaryClick = when {
-                    invoice == null -> onTraCuuHoaDon
-                    isPaid || isReplacement -> onXemChiTiet
-                    else -> onThanhToanNgay
-                }
-                val primaryLabel = when {
-                    invoice == null -> "Tra cứu hóa đơn"
-                    isPaid || isReplacement -> "Xem chi tiết"
-                    else -> "Thanh toán ngay"
-                }
-                Button(
-                    onClick = primaryClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    contentPadding = PaddingValues(vertical = 14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1565C0)),
-                ) {
-                    Text(primaryLabel, style = MaterialTheme.typography.titleSmall, color = Color.White)
-                }
+            Spacer(Modifier.height(12.dp))
+            val primaryClick = when {
+                invoice == null -> onTraCuuHoaDon
+                isPaid || isReplacement -> onXemChiTiet
+                else -> onThanhToanNgay
+            }
+            val primaryLabel = when {
+                invoice == null -> "Tra cứu hóa đơn"
+                isPaid || isReplacement -> "Xem chi tiết"
+                else -> "Thanh toán ngay"
+            }
+            Button(
+                onClick = primaryClick,
+                modifier = Modifier.fillMaxWidth().height(48.dp),
+                shape = CircleShape,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isPaid || isReplacement) Color(0xFFF5F7FA) else Color(0xFF1565C0),
+                    contentColor = if (isPaid || isReplacement) Color(0xFF1976D2) else Color.White,
+                ),
+                elevation = null
+            ) {
+                Text(
+                    text = primaryLabel, 
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
             }
         }
     }
@@ -630,7 +711,7 @@ private fun MenuIconCard(
                     Icon(
                         imageVector = item.icon,
                         contentDescription = null,
-                        modifier = Modifier.size(28.dp),
+                        modifier = Modifier.size(36.dp),
                         tint = item.iconTint,
                     )
                 }
@@ -639,7 +720,10 @@ private fun MenuIconCard(
         Spacer(Modifier.height(10.dp))
         Text(
             text = item.title,
-            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Medium),
+            style = MaterialTheme.typography.titleSmall.copy(
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp
+            ),
             color = Color(0xFF374151),
             textAlign = TextAlign.Center,
             maxLines = 1,
@@ -649,90 +733,71 @@ private fun MenuIconCard(
 }
 
 @Composable
-private fun RecentInvoicesSection(
-    invoices: List<InvoiceSummary>,
-    onViewAll: () -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            text = "Hóa đơn gần đây",
-            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-            color = Color(0xFF212121),
-        )
-        TextButton(onClick = onViewAll) {
-            Text("Xem tất cả", color = bannerBlue, style = MaterialTheme.typography.labelLarge)
-            Spacer(Modifier.width(4.dp))
-            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = bannerBlue, modifier = Modifier.size(16.dp))
+private fun CompanyBannerCarousel() {
+    val banners = listOf(
+        Res.drawable.banner_1,
+        Res.drawable.banner_2,
+        Res.drawable.banner_3,
+        Res.drawable.banner_4,
+        Res.drawable.banner_5
+    )
+    val pageCount = banners.size
+    val pagerState = rememberPagerState(pageCount = { pageCount })
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            yield()
+            delay(3000)
+            pagerState.animateScrollToPage(
+                page = (pagerState.currentPage + 1) % pagerState.pageCount,
+                animationSpec = tween(600)
+            )
         }
     }
 
-    Spacer(Modifier.height(10.dp))
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = cardShadow),
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            if (invoices.isEmpty()) {
-                Text(
-                    text = "Chưa có dữ liệu hóa đơn",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = subtitleGray,
-                    modifier = Modifier.padding(8.dp),
-                )
-            } else {
-                invoices.forEachIndexed { idx, inv ->
-                    RecentInvoiceRow(inv)
-                    if (idx != invoices.lastIndex) {
-                        HorizontalDivider(modifier = Modifier.padding(vertical = 10.dp), color = Color(0xFFEEF2F6))
-                    }
+    Column(modifier = Modifier.fillMaxWidth()) {
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxWidth().height(280.dp),
+        ) { page ->
+            Card(
+                modifier = Modifier.fillMaxSize(),
+                shape = RoundedCornerShape(0.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(banners[page]),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
             }
         }
-    }
-}
 
-@Composable
-private fun RecentInvoiceRow(inv: InvoiceSummary) {
-    val isPaid = inv.paymentStatusLabel.contains("đã thanh toán", ignoreCase = true)
-    val statusBg = if (isPaid) Color(0xFFE8F5E9) else Color(0xFFFFF3E0)
-    val statusColor = if (isPaid) Color(0xFF2E7D32) else Color(0xFFE65100)
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = "HĐ ${inv.id}",
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                color = Color(0xFF1F2933),
-            )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                text = "Sử dụng: ${kotlin.math.max(inv.newVal - inv.oldVal, 0)} m³",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF607D8B),
-            )
-        }
-        Column(horizontalAlignment = Alignment.End) {
-            Text(
-                text = inv.totalAmount.formatVnd(),
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = if (isPaid) Color(0xFF2E7D32) else Color(0xFFD84315),
-            )
-            Spacer(Modifier.height(4.dp))
-            Surface(color = statusBg, shape = RoundedCornerShape(999.dp)) {
-                Text(
-                    text = if (isPaid) "Đã thanh toán" else "Chưa TT",
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                    color = statusColor,
+        Spacer(modifier = Modifier.height(12.dp))
+
+        // Dấu chấm tròn chỉ báo (Dots Indicator)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            repeat(pageCount) { iteration ->
+                val isSelected = pagerState.currentPage == iteration
+                val color = if (isSelected) bannerBlue else Color(0xFFE0E0E0)
+                val width = if (isSelected) 16.dp else 8.dp
+                Box(
+                    modifier = Modifier
+                        .padding(horizontal = 4.dp)
+                        .clip(CircleShape)
+                        .background(color)
+                        .height(8.dp)
+                        .width(width)
                 )
             }
         }

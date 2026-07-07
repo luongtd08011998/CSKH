@@ -232,7 +232,7 @@ private fun MainNavHost(
         }
 
         Scaffold(
-        bottomBar = {
+            bottomBar = {
             if (showBottomBar) {
                 AppBottomBar(
                     unreadNotificationCount = unreadNotificationCount,
