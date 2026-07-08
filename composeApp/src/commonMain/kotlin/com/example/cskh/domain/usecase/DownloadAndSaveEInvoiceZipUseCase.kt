@@ -9,6 +9,6 @@ class DownloadAndSaveEInvoiceZipUseCase(
 ) {
     suspend operator fun invoke(baseUrl: String, invoiceId: Long): Result<String> {
         val bytes = invoiceRepository.downloadEInvoiceZip(baseUrl, invoiceId).getOrElse { return Result.failure(it) }
-        return zipSaver.saveEInvoiceZip(invoiceId, bytes)
+        return zipSaver.extractAndShareHtml(invoiceId, bytes)
     }
 }

@@ -24,7 +24,7 @@ import com.example.cskh.domain.repository.NotificationRepository
 import com.example.cskh.domain.repository.RegisterRepository
 import com.example.cskh.domain.repository.MaintenanceArticleRepository
 import com.example.cskh.domain.repository.FeaturedArticleRepository
-import com.example.cskh.domain.usecase.DownloadAndSaveEInvoiceZipUseCase
+import com.example.cskh.domain.usecase.DownloadEInvoicePdfUseCase
 import com.example.cskh.domain.usecase.CreateFeedbackUseCase
 
 import com.example.cskh.domain.usecase.GetCustomerMeUseCase
@@ -98,7 +98,7 @@ val appModule = module {
 
     single<InvoiceZipSaver> { InvoiceZipSaverImpl() }
     single<QrPngSaver> { QrPngSaverImpl() }
-    single { DownloadAndSaveEInvoiceZipUseCase(get(), get()) }
+    single { DownloadEInvoicePdfUseCase(get()) }
     single { GetCustomerMeUseCase(get()) }
     single<AuthRepository> { AuthRepositoryImpl(get(), get()) }
     single<InvoiceRepository> { InvoiceRepositoryImpl(get(), get(), get()) }
@@ -130,6 +130,15 @@ val appModule = module {
     viewModel { RegisterViewModel(get()) }
     viewModel { PhanAnhListViewModel(get()) }
     viewModel { (id: Long) -> PhanAnhDetailViewModel(get(), get(), id) }
-    viewModel { (id: Long) -> InvoiceDetailViewModel(get(), get(), get(), get(), id) }
+    viewModel { (id: Long) -> 
+        InvoiceDetailViewModel(
+            get<com.example.cskh.domain.usecase.GetInvoiceDetailUseCase>(),
+            get<com.example.cskh.domain.usecase.DownloadEInvoicePdfUseCase>(),
+            get<com.example.cskh.domain.usecase.UserFormPreferencesUseCase>(),
+            get<com.example.cskh.platform.InvoiceZipSaver>(),
+            get<com.example.cskh.data.session.TokenRefreshCoordinator>(),
+            id
+        ) 
+    }
     viewModel { FeedbackNotificationViewModel(get(), get(), get(), get(), get()) }
 }

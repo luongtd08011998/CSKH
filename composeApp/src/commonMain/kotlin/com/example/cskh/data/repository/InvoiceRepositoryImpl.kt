@@ -81,6 +81,23 @@ class InvoiceRepositoryImpl(
         }
     }
 
+    override suspend fun downloadEInvoicePdf(baseUrl: String, id: Long): Result<ByteArray> = runCatching {
+        val token = sessionManager.accessToken ?: error("Chưa đăng nhập")
+        val url = "${normalizeApiBaseUrl(baseUrl)}/api/v1/qlkh/invoices/$id/e-invoice-download-pdf"
+        try {
+            binaryDownloader.getBytes(url, token)
+        } catch (e: Exception) {
+            val m = e.message.orEmpty()
+            if (m.contains("expected", ignoreCase = true) && m.contains("bytes but got", ignoreCase = true)) {
+                error(
+                    "Tải xuống không hoàn tất: dữ liệu nhận được ngắn hơn kích thước máy chủ khai báo (Content-Length). " +
+                        "Hãy thử lại; nếu vẫn lỗi cần chỉnh API/proxy.",
+                )
+            }
+            throw e
+        }
+    }
+
     override suspend fun viewEInvoice(baseUrl: String, id: Long): Result<EInvoiceData> = runCatching {
         val token = sessionManager.accessToken ?: error("Chưa đăng nhập")
         val url = "${normalizeApiBaseUrl(baseUrl)}/api/v1/qlkh/invoices/$id/e-invoice-view"

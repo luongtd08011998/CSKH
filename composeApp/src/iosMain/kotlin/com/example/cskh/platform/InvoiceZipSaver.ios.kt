@@ -63,7 +63,45 @@ actual class InvoiceZipSaverImpl actual constructor() : InvoiceZipSaver {
 
         Result.success("Tải hóa đơn thành công.")
     }
+
+    override suspend fun extractAndShareHtml(invoiceId: Long, bytes: ByteArray): Result<String> = withContext(Dispatchers.Default) {
+        Result.success("Không hỗ trợ hiển thị HTML nữa.")
+    }
+
+    override suspend fun saveAndOpenPdf(invoiceId: Long, bytes: ByteArray): Result<String> = withContext(Dispatchers.Default) {
+        var finalPdfPath: String? = null
+        try {
+            val fm = NSFileManager.defaultManager
+            val cacheUrl = fm.URLsForDirectory(
+                directory = platform.Foundation.NSCachesDirectory,
+                inDomains = NSUserDomainMask,
+            ).firstOrNull() as? NSURL
+                ?: return@withContext Result.failure(Exception("Không tìm được thư mục Cache"))
+            val cacheBase = cacheUrl.path
+                ?: return@withContext Result.failure(Exception("Đường dẫn Cache không hợp lệ"))
+            val cacheDir = "$cacheBase/e_invoices"
+            if (!fm.fileExistsAtPath(cacheDir)) {
+                fm.createDirectoryAtPath(cacheDir, withIntermediateDirectories = true, attributes = null, error = null)
+            }
+
+            finalPdfPath = "$cacheDir/hoadon-tien-nuoc-$invoiceId.pdf"
+            writeBytesToPath(finalPdfPath, bytes)
+        } catch (e: Throwable) {
+            return@withContext Result.failure(e)
+        }
+
+        withContext(Dispatchers.Main) {
+            platform.Foundation.NSNotificationCenter.defaultCenter.postNotificationName(
+                aName = "CskhPresentDocumentViewer",
+                `object` = null,
+                userInfo = mapOf<Any?, Any?>("filePath" to finalPdfPath),
+            )
+        }
+        
+        Result.success("Đã tải và mở hóa đơn PDF.")
+    }
 }
+
 
 /** Gửi notification để Swift handler trình bày UIActivityViewController với popover đúng cách trên iPad. */
 @OptIn(ExperimentalForeignApi::class)

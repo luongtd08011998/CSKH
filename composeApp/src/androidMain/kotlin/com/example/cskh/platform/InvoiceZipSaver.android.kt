@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
+import com.example.cskh.fcm.WebViewActivity
 import com.example.cskh.util.ZipExtractor
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -18,7 +19,7 @@ actual class InvoiceZipSaverImpl actual constructor() : InvoiceZipSaver {
 
     override suspend fun saveEInvoiceZip(invoiceId: Long, bytes: ByteArray): Result<String> = withContext(Dispatchers.IO) {
         // Bước 1: lưu file ZIP — bắt buộc phải thành công.
-        val saved = runCatching {
+        val saved = runCatching<SavedZipInfo> {
             val ctx = AndroidApplicationHolder.application
             saveZipToDownloads(ctx, invoiceId, bytes)
         }.getOrElse { return@withContext Result.failure(it) }
@@ -32,7 +33,58 @@ actual class InvoiceZipSaverImpl actual constructor() : InvoiceZipSaver {
 
         Result.success(buildSuccessMessage(invoiceId, saved))
     }
+
+    override suspend fun extractAndShareHtml(invoiceId: Long, bytes: ByteArray): Result<String> = withContext(Dispatchers.IO) {
+        runCatching {
+            "Không hỗ trợ hiển thị HTML nữa."
+        }
+    }
+
+    override suspend fun saveAndOpenPdf(invoiceId: Long, bytes: ByteArray): Result<String> = withContext(Dispatchers.IO) {
+        runCatching {
+            val ctx = AndroidApplicationHolder.application
+
+            // Lưu file PDF vào cache để share qua FileProvider
+            val cacheDir = File(ctx.cacheDir, "e_invoices")
+            cacheDir.mkdirs()
+            val pdfFile = File(cacheDir, "hoadon-tien-nuoc-$invoiceId.pdf")
+            FileOutputStream(pdfFile).use { it.write(bytes) }
+
+            // Tạo URI dùng FileProvider
+            val uri = androidx.core.content.FileProvider.getUriForFile(
+                ctx,
+                "${ctx.packageName}.fileprovider",
+                pdfFile
+            )
+
+            val intent = android.content.Intent(ctx, WebViewActivity::class.java).apply {
+                putExtra(WebViewActivity.EXTRA_HTML_FILE_PATH, pdfFile.absolutePath)
+                putExtra(WebViewActivity.EXTRA_TITLE, "Hóa đơn điện tử")
+                flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+
+            try {
+                ctx.startActivity(intent)
+                "Đã mở hóa đơn PDF."
+            } catch (e: Exception) {
+                error("Không thể mở hóa đơn PDF: ${e.message}")
+            }
+        }
+    }
 }
+
+private fun getDisplayNameFromUri(ctx: Context, uri: Uri): String? {
+    var name: String? = null
+    ctx.contentResolver.query(uri, arrayOf(MediaStore.MediaColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+        if (cursor.moveToFirst()) {
+            name = cursor.getString(0)
+        }
+    }
+    return name
+}
+
+
+
 
 private data class SavedZipInfo(
     val zipFileName: String,

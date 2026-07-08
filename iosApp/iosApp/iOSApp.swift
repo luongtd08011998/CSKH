@@ -46,6 +46,16 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
             self?.presentShareSheet(filePath: filePath)
         }
 
+        // Lắng nghe notification từ Kotlin để present WKWebView xem hóa đơn PDF
+        NotificationCenter.default.addObserver(
+            forName: NSNotification.Name("CskhPresentDocumentViewer"),
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            guard let filePath = notification.userInfo?["filePath"] as? String else { return }
+            self?.presentHtmlViewer(filePath: filePath)
+        }
+
         return true
     }
 
@@ -53,14 +63,15 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         let fileUrl = URL(fileURLWithPath: filePath)
         let activityVC = UIActivityViewController(activityItems: [fileUrl], applicationActivities: nil)
 
-        // Tìm topmost view controller
-        guard let rootVC = UIApplication.shared.windows.first?.rootViewController else { return }
+        guard let rootVC = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .compactMap({ $0.keyWindow })
+            .first?.rootViewController else { return }
         var topVC = rootVC
         while let presented = topVC.presentedViewController {
             topVC = presented
         }
 
-        // Trên iPad bắt buộc phải set sourceView cho popover, nếu không iOS sẽ crash
         if UIDevice.current.userInterfaceIdiom == .pad {
             activityVC.popoverPresentationController?.sourceView = topVC.view
             activityVC.popoverPresentationController?.sourceRect = CGRect(
@@ -73,6 +84,21 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         }
 
         topVC.present(activityVC, animated: true)
+    }
+
+    private func presentHtmlViewer(filePath: String) {
+        guard let rootVC = UIApplication.shared.connectedScenes
+            .compactMap({ $0 as? UIWindowScene })
+            .compactMap({ $0.keyWindow })
+            .first?.rootViewController else { return }
+        var topVC = rootVC
+        while let presented = topVC.presentedViewController {
+            topVC = presented
+        }
+        let viewerVC = HtmlViewerViewController(filePath: filePath)
+        let nav = UINavigationController(rootViewController: viewerVC)
+        nav.modalPresentationStyle = .fullScreen
+        topVC.present(nav, animated: true)
     }
 
     func application(

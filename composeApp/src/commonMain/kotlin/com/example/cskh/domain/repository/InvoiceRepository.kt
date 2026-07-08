@@ -8,5 +8,6 @@ interface InvoiceRepository {
     suspend fun getInvoices(baseUrl: String, page: Int, pageSize: Int): Result<PagedInvoices>
     suspend fun getInvoiceDetail(baseUrl: String, id: Long): Result<InvoiceDetail>
     suspend fun downloadEInvoiceZip(baseUrl: String, id: Long): Result<ByteArray>
+    suspend fun downloadEInvoicePdf(baseUrl: String, id: Long): Result<ByteArray>
     suspend fun viewEInvoice(baseUrl: String, id: Long): Result<EInvoiceData>
 }

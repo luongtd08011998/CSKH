@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -27,6 +28,7 @@ import androidx.compose.material.icons.filled.AttachMoney
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CreditCard
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
@@ -60,6 +62,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -272,7 +275,7 @@ fun InvoiceDetailScreen(
                             }
                             clipboard.setText(AnnotatedString(text))
                         },
-                        onDownloadEInvoiceZip = { viewModel.onDownloadEInvoiceZip() },
+                        onDownloadEInvoiceZip = { viewModel.downloadEInvoice() },
                         isEInvoiceDownloading = state.isEInvoiceDownloading,
                         eInvoiceMessage = state.eInvoiceMessage,
                         showInfoCard = true
@@ -357,6 +360,7 @@ fun InvoiceDetailScreen(
                 onDismiss = { showVietQrDialog = false },
             )
         }
+
     }
 }
 
@@ -565,7 +569,7 @@ private fun DetailHeader(
                                 Icon(Icons.Filled.Download, contentDescription = null, modifier = Modifier.size(20.dp))
                             }
                             Spacer(modifier = Modifier.size(8.dp))
-                            Text("Tải hóa đơn điện tử (.zip)")
+                            Text("Tải hóa đơn điện tử")
                         }
                         eInvoiceMessage?.let { msg ->
                             Spacer(modifier = Modifier.height(10.dp))

@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.cskh.data.session.TokenRefreshCoordinator
 import com.example.cskh.domain.model.EInvoiceData
 import com.example.cskh.domain.model.InvoiceDetail
-import com.example.cskh.domain.usecase.DownloadAndSaveEInvoiceZipUseCase
+import com.example.cskh.domain.usecase.DownloadEInvoicePdfUseCase
 import com.example.cskh.domain.usecase.GetEInvoiceViewUseCase
 import com.example.cskh.domain.usecase.GetInvoiceDetailUseCase
 import com.example.cskh.domain.usecase.UserFormPreferencesUseCase
@@ -24,14 +24,16 @@ data class InvoiceDetailUiState(
     val isEInvoiceDownloading: Boolean = false,
     val eInvoiceMessage: String? = null,
     val eInvoiceError: String? = null,
+    val pdfData: ByteArray? = null,
     /** true khi refresh token hết hạn → caller điều hướng về màn hình Login */
     val sessionExpired: Boolean = false,
 )
 
 class InvoiceDetailViewModel(
-    private val getDetail: GetInvoiceDetailUseCase,
+    private val getInvoiceDetailUseCase: GetInvoiceDetailUseCase,
+    private val downloadEInvoicePdf: DownloadEInvoicePdfUseCase,
     private val formPreferences: UserFormPreferencesUseCase,
-    private val downloadAndSaveEInvoiceZip: DownloadAndSaveEInvoiceZipUseCase,
+    private val zipSaver: com.example.cskh.platform.InvoiceZipSaver,
     private val tokenRefresh: TokenRefreshCoordinator,
     private val invoiceId: Long,
 ) : ViewModel() {
@@ -51,27 +53,37 @@ class InvoiceDetailViewModel(
         }
         viewModelScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
-            val result = withContext(Dispatchers.Default) { getDetail(baseUrl, invoiceId) }
+            val result = withContext(Dispatchers.Default) { getInvoiceDetailUseCase(baseUrl, invoiceId) }
             
             if (isUnauthorized(result)) {
                 if (!tokenRefresh.tryRefresh()) {
                     _state.update { it.copy(isLoading = false, sessionExpired = true) }
                     return@launch
                 }
-                load()
+                val retry = withContext(Dispatchers.Default) { getInvoiceDetailUseCase(baseUrl, invoiceId) }
+                if (retry.isSuccess) {
+                    _state.update { it.copy(detail = retry.getOrNull(), isLoading = false) }
+                } else {
+                    _state.update {
+                        it.copy(
+                            errorMessage = retry.exceptionOrNull()?.message ?: "Lỗi tải chi tiết hóa đơn",
+                            isLoading = false,
+                        )
+                    }
+                }
                 return@launch
             }
-
-            result.fold(
-                onSuccess = { d ->
-                    _state.update { it.copy(detail = d, isLoading = false) }
-                },
-                onFailure = { e ->
-                    _state.update {
-                        it.copy(isLoading = false, errorMessage = e.message ?: "Không tải được chi tiết")
-                    }
-                },
-            )
+            
+            if (result.isSuccess) {
+                _state.update { it.copy(detail = result.getOrNull(), isLoading = false) }
+            } else {
+                _state.update {
+                    it.copy(
+                        errorMessage = result.exceptionOrNull()?.message ?: "Lỗi không xác định",
+                        isLoading = false,
+                    )
+                }
+            }
         }
     }
 
@@ -83,47 +95,67 @@ class InvoiceDetailViewModel(
         _state.update { it.copy(sessionExpired = false) }
     }
 
-    fun onDownloadEInvoiceZip() {
+    fun downloadEInvoice() {
         val baseUrl = formPreferences.getBaseUrl()
         if (baseUrl.isBlank()) {
             _state.update { it.copy(eInvoiceError = "Thiếu địa chỉ API.") }
             return
         }
+        _state.update {
+            it.copy(
+                isEInvoiceDownloading = true,
+                eInvoiceMessage = null,
+                eInvoiceError = null,
+            )
+        }
         viewModelScope.launch {
-            _state.update {
-                it.copy(
-                    isEInvoiceDownloading = true,
-                    eInvoiceError = null,
-                    eInvoiceMessage = null,
-                )
-            }
-            val result = withContext(Dispatchers.Default) { downloadAndSaveEInvoiceZip(baseUrl, invoiceId) }
-
+            val result = withContext(Dispatchers.Default) { downloadEInvoicePdf(baseUrl, invoiceId) }
+            
             if (isUnauthorized(result)) {
                 if (!tokenRefresh.tryRefresh()) {
                     _state.update { it.copy(isEInvoiceDownloading = false, sessionExpired = true) }
                     return@launch
                 }
-                onDownloadEInvoiceZip()
+                val retry = withContext(Dispatchers.Default) { downloadEInvoicePdf(baseUrl, invoiceId) }
+                handleDownloadResult(retry)
                 return@launch
             }
-
-            result.fold(
-                onSuccess = { pathOrHint ->
-                    _state.update {
-                        it.copy(isEInvoiceDownloading = false, eInvoiceMessage = pathOrHint)
-                    }
-                },
-                onFailure = { e ->
-                    _state.update {
-                        it.copy(
-                            isEInvoiceDownloading = false,
-                            eInvoiceError = e.message ?: "Tải hóa đơn điện tử thất bại",
-                        )
-                    }
-                },
-            )
+            handleDownloadResult(result)
         }
+    }
+
+    private fun handleDownloadResult(result: Result<ByteArray>) {
+        result.fold(
+            onSuccess = { bytes ->
+                viewModelScope.launch {
+                    val saveResult = zipSaver.saveAndOpenPdf(invoiceId, bytes)
+                    saveResult.fold(
+                        onSuccess = { msg ->
+                            _state.update {
+                                it.copy(isEInvoiceDownloading = false, eInvoiceMessage = msg)
+                            }
+                        },
+                        onFailure = { e ->
+                            _state.update {
+                                it.copy(isEInvoiceDownloading = false, eInvoiceError = e.message ?: "Tải hóa đơn điện tử thất bại")
+                            }
+                        }
+                    )
+                }
+            },
+            onFailure = { e ->
+                _state.update {
+                    it.copy(
+                        isEInvoiceDownloading = false,
+                        eInvoiceError = e.message ?: "Tải hóa đơn điện tử thất bại",
+                    )
+                }
+            },
+        )
+    }
+
+    fun clearPdfData() {
+        _state.update { it.copy(pdfData = null) }
     }
 
     fun clearEInvoiceFeedback() {
