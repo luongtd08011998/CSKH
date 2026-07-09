@@ -99,14 +99,26 @@ fun PhanAnhDetailScreen(
                 title = { Text("Chi tiết phản ánh") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Quay lại",
+                            tint = Color.White
+                        )
                     }
                 },
                 actions = {
                     IconButton(onClick = { viewModel.refresh() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = "Tải lại")
+                        Icon(
+                            Icons.Default.Refresh,
+                            contentDescription = "Tải lại",
+                            tint = Color.White
+                        )
                     }
                 },
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF1976D2),
+                    titleContentColor = Color.White,
+                ),
             )
         },
     ) { padding ->

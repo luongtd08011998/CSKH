@@ -21,7 +21,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AttachMoney
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Image
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,6 +40,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -67,7 +75,10 @@ private data class PriceGroup(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WaterPriceScreen(onBack: () -> Unit) {
+fun WaterPriceScreen(
+    onBack: () -> Unit,
+    appliedGroupCode: String? = "III" // Giả lập nhóm giá đang áp dụng cho khách hàng (nhóm III - Nước sinh hoạt đô thị)
+) {
     val groups = rememberWaterPriceGroups()
     Scaffold(
         topBar = {
@@ -113,7 +124,15 @@ fun WaterPriceScreen(onBack: () -> Unit) {
                         Spacer(modifier = Modifier.height(10.dp))
 
                         groups.forEachIndexed { index, g ->
-                            PriceGroupCard(g)
+                            val isApplied = g.code == appliedGroupCode
+                            var expanded by androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(isApplied) }
+
+                            PriceGroupCard(
+                                group = g,
+                                isExpanded = expanded,
+                                onToggle = { expanded = !expanded },
+                                isApplied = isApplied
+                            )
                             if (index != groups.lastIndex) Spacer(modifier = Modifier.height(12.dp))
                         }
                     }
@@ -240,24 +259,64 @@ private fun PriceTableHeader() {
 }
 
 @Composable
-private fun PriceGroupCard(group: PriceGroup) {
+private fun PriceGroupCard(
+    group: PriceGroup,
+    isExpanded: Boolean,
+    onToggle: () -> Unit,
+    isApplied: Boolean = false
+) {
+    val borderColor = if (isApplied) Color(0xFF1976D2) else Color(0xFFE3F2FD)
+    val bgColor = if (isApplied) Color(0xFFE3F2FD) else Color(0xFFF7FAFF)
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(14.dp),
-        color = Color(0xFFF7FAFF),
-        border = BorderStroke(1.dp, Color(0xFFE3F2FD)),
+        color = bgColor,
+        border = BorderStroke(if (isApplied) 2.dp else 1.dp, borderColor),
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                text = "${group.code}. ${group.name}",
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                color = Color(0xFF1565C0),
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-            group.tiers.forEachIndexed { idx, tier ->
-                PriceTierRow(tier)
-                if (idx != group.tiers.lastIndex) {
-                    Spacer(modifier = Modifier.height(8.dp))
+        Column {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onToggle)
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "${group.code}. ${group.name}",
+                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                        color = Color(0xFF1565C0),
+                    )
+                    if (isApplied) {
+                        Text(
+                            text = "Áp dụng cho bạn",
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
+                            color = Color(0xFF1976D2),
+                        )
+                    }
+                }
+                Icon(
+                    imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = Color(0xFF1565C0)
+                )
+            }
+            
+            AnimatedVisibility(
+                visible = isExpanded,
+                enter = expandVertically(),
+                exit = shrinkVertically()
+            ) {
+                Column(modifier = Modifier.padding(start = 12.dp, end = 12.dp, bottom = 12.dp)) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    group.tiers.forEachIndexed { idx, tier ->
+                        PriceTierRow(tier)
+                        if (idx != group.tiers.lastIndex) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
                 }
             }
         }

@@ -6,6 +6,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import com.example.cskh.presentation.components.bounceClick
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -324,7 +326,8 @@ fun NotificationListScreen(
                                         EmptyView(state.errorMessage ?: "Không có thông báo")
                                     }
                                 } else {
-                                items(finalFilteredNotifications, key = { it.id }) { notification ->
+                                itemsIndexed(finalFilteredNotifications, key = { _, it -> it.id }) { index, notification ->
+                                    StaggeredListItem(index = index) {
                                         NotificationCard(
                                             notification = notification,
                                             onClick = {
@@ -360,7 +363,9 @@ fun NotificationListScreen(
             }
         }
     }
+    }
 }
+
 
 @Composable
 private fun MaintenanceTabContent(
@@ -418,11 +423,13 @@ private fun MaintenanceTabContent(
                         EmptyView("Không có bài viết bảo trì")
                     }
                 } else {
-                    items(articles, key = { it.id }) { article ->
-                        MaintenanceCard(
-                            article = article,
-                            onClick = { onArticleClick("https://beta.toctienltd.vn/news/${article.slug}") }
-                        )
+                    itemsIndexed(articles, key = { _, it -> it.id }) { index, article ->
+                        StaggeredListItem(index = index) {
+                            MaintenanceCard(
+                                article = article,
+                                onClick = { onArticleClick("https://beta.toctienltd.vn/news/${article.slug}") }
+                            )
+                        }
                     }
 
                     // Nút tải thêm
@@ -508,11 +515,13 @@ private fun FeaturedTabContent(
                         EmptyView("Không có bài viết nổi bật")
                     }
                 } else {
-                    items(articles, key = { it.id }) { article ->
-                        MaintenanceCard(
-                            article = article,
-                            onClick = { onArticleClick("https://beta.toctienltd.vn/news/${article.slug}") }
-                        )
+                    itemsIndexed(articles, key = { _, it -> it.id }) { index, article ->
+                        StaggeredListItem(index = index) {
+                            MaintenanceCard(
+                                article = article,
+                                onClick = { onArticleClick("https://beta.toctienltd.vn/news/${article.slug}") }
+                            )
+                        }
                     }
 
                     if (meta != null && featuredState.currentPage < meta.pages - 1 && !featuredState.isLoadingMore) {
@@ -663,7 +672,7 @@ fun MaintenanceCard(
                 fontSize = 15.sp,
                 color = Color(0xFF212121),
                 lineHeight = 22.sp,
-                maxLines = 4,
+                maxLines = 3,
                 overflow = TextOverflow.Ellipsis
             )
 
@@ -673,20 +682,21 @@ fun MaintenanceCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Button(
-                onClick = onClick,
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF2563EB),
-                    contentColor = Color.White
-                ),
-                shape = RoundedCornerShape(50),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
+                horizontalArrangement = Arrangement.End
             ) {
-                Text(
-                    text = "Xem thêm",
-                    fontSize = 14.sp
-                )
+                TextButton(
+                    onClick = onClick,
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = "Xem thêm",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF2563EB)
+                    )
+                }
             }
         }
     }
@@ -702,7 +712,14 @@ fun NotificationCard(
 
     Card(
         modifier = Modifier
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .bounceClick {
+                if (!notification.url.isNullOrBlank()) {
+                    onViewDetail()
+                } else {
+                    onClick()
+                }
+            },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.White
@@ -756,26 +773,27 @@ fun NotificationCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Button(
-                onClick = {
-                    if (!notification.url.isNullOrBlank()) {
-                        onViewDetail()
-                    } else {
-                        onClick()
-                    }
-                },
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF2563EB),
-                    contentColor = Color.White
-                ),
-                shape = RoundedCornerShape(50),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
+                horizontalArrangement = Arrangement.End
             ) {
-                Text(
-                    text = "Xem thêm",
-                    fontSize = 14.sp
-                )
+                TextButton(
+                    onClick = {
+                        if (!notification.url.isNullOrBlank()) {
+                            onViewDetail()
+                        } else {
+                            onClick()
+                        }
+                    },
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp)
+                ) {
+                    Text(
+                        text = "Xem thêm",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF2563EB)
+                    )
+                }
             }
         }
     }
@@ -802,5 +820,28 @@ fun EmptyView(message: String) {
             color = Color.Gray,
             fontWeight = FontWeight.Medium
         )
+    }
+}
+
+@Composable
+private fun StaggeredListItem(
+    index: Int,
+    content: @Composable () -> Unit
+) {
+    val visible = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay((index * 100L).coerceAtMost(1000L))
+        visible.value = true
+    }
+    androidx.compose.animation.AnimatedVisibility(
+        visible = visible.value,
+        enter = androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(500)) + 
+                androidx.compose.animation.slideInVertically(
+                    initialOffsetY = { 50 },
+                    animationSpec = androidx.compose.animation.core.tween(500, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                ),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        content()
     }
 }

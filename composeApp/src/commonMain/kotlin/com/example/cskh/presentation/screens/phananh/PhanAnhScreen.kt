@@ -139,9 +139,17 @@ fun PhanAnhScreen(
                 title = { Text("Phản ánh dịch vụ") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Quay lại")
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Quay lại",
+                            tint = Color.White
+                        )
                     }
                 },
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color(0xFF1976D2),
+                    titleContentColor = Color.White,
+                ),
                 windowInsets = WindowInsets(0),
             )
         },
@@ -301,6 +309,9 @@ private fun FormState(
     onDismissError: () -> Unit,
     onSubmit: () -> Unit,
 ) {
+    var currentStep by remember { mutableIntStateOf(1) }
+    val totalSteps = 2
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -329,165 +340,199 @@ private fun FormState(
                 )
             }
         }
+        
+        androidx.compose.material3.LinearProgressIndicator(
+            progress = { currentStep.toFloat() / totalSteps.toFloat() },
+            modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
+            color = Color(0xFF2563EB),
+            trackColor = Color(0xFFE2E8F0)
+        )
+        Text(
+            text = "Bước $currentStep/$totalSteps",
+            style = MaterialTheme.typography.labelMedium,
+            color = Color(0xFF64748B),
+            modifier = Modifier.align(Alignment.End)
+        )
 
-        CardBlock(title = "Loại vấn đề *") {
-            val rows = issueTypes.chunked(2)
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                rows.forEach { row ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    ) {
-                        row.forEach { item ->
-                            IssueTypeTile(
-                                modifier = Modifier.weight(1f),
-                                item = item,
-                                selected = selectedIssue == item.value,
-                                onClick = { onSelectIssue(item.value) },
-                            )
+        if (currentStep == 1) {
+            CardBlock(title = "Loại vấn đề *") {
+                val rows = issueTypes.chunked(2)
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    rows.forEach { row ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            row.forEach { item ->
+                                IssueTypeTile(
+                                    modifier = Modifier.weight(1f),
+                                    item = item,
+                                    selected = selectedIssue == item.value,
+                                    onClick = { onSelectIssue(item.value) },
+                                )
+                            }
+                            repeat(2 - row.size) { Spacer(modifier = Modifier.weight(1f)) }
                         }
-                        repeat(2 - row.size) { Spacer(modifier = Modifier.weight(1f)) }
                     }
                 }
             }
-        }
 
-        CardBlock(title = "Địa điểm *") {
-            OutlinedTextField(
-                value = address,
-                onValueChange = onAddressChange,
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Nhập địa chỉ cụ thể") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
-            )
-            Spacer(Modifier.height(6.dp))
-            Text(
-                text = "VD: Số nhà, tên đường, phường/xã",
-                style = MaterialTheme.typography.bodySmall,
-                color = Color(0xFF64748B),
-            )
-        }
-
-        CardBlock(title = "Mô tả chi tiết *") {
-            OutlinedTextField(
-                value = description,
-                onValueChange = onDescriptionChange,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(140.dp),
-                placeholder = { Text("Mô tả tình trạng, thời gian xảy ra, ảnh hưởng...") },
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
-            )
-        }
-
-        CardBlock(title = "Hình ảnh minh họa (Tùy chọn)") {
-            PhotoUploadCard(
-                onClick = onPickPhotos,
-                subtitle = "Tối đa 5 ảnh",
-            )
-            if (photos.isNotEmpty()) {
-                Spacer(Modifier.height(10.dp))
-                Row(
+            CardBlock(title = "Địa điểm *") {
+                OutlinedTextField(
+                    value = address,
+                    onValueChange = onAddressChange,
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Ví dụ: 123 Đường A, Phường B...") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                )
+            }
+            
+            val canGoNext = selectedIssue != null && address.isNotBlank()
+            Button(
+                onClick = { currentStep = 2 },
+                enabled = canGoNext,
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(18.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
+            ) {
+                Text("Tiếp tục", style = MaterialTheme.typography.titleMedium, color = Color.White)
+            }
+        } else {
+            CardBlock(title = "Mô tả chi tiết *") {
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = onDescriptionChange,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        .height(140.dp),
+                    placeholder = { Text("Mô tả tình trạng, thời gian xảy ra, ảnh hưởng...") },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Default),
+                )
+            }
+
+            CardBlock(title = "Hình ảnh minh họa (Tùy chọn)") {
+                PhotoUploadCard(
+                    onClick = onPickPhotos,
+                    subtitle = "Tối đa 5 ảnh",
+                )
+                if (photos.isNotEmpty()) {
+                    Spacer(Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        photos.forEach { img ->
+                            PhotoChip(
+                                name = img.name,
+                                onRemove = { onRemovePhoto(img.uri) },
+                            )
+                        }
+                    }
+                }
+            }
+
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(18.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFEFF6FF)),
+                border = BorderStroke(1.dp, Color(0xFFBFDBFE)),
+            ) {
+                Row(
+                    modifier = Modifier.padding(14.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.Top,
                 ) {
-                    photos.forEach { img ->
-                        PhotoChip(
-                            name = img.name,
-                            onRemove = { onRemovePhoto(img.uri) },
+                    Icon(
+                        imageVector = Icons.Filled.WarningAmber,
+                        contentDescription = null,
+                        tint = Color(0xFF2563EB),
+                        modifier = Modifier.size(20.dp),
+                    )
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Lưu ý:",
+                            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = Color(0xFF1E3A8A),
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            text = "• Phản ánh khẩn cấp sẽ được xử lý trong vòng 4h\n" +
+                                "• Bạn sẽ nhận mã số theo dõi sau khi gửi\n" +
+                                "• Thông tin liên hệ lấy từ hồ sơ đã đăng ký",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF1D4ED8),
                         )
                     }
                 }
             }
-        }
 
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(18.dp),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFEFF6FF)),
-            border = BorderStroke(1.dp, Color(0xFFBFDBFE)),
-        ) {
-            Row(
-                modifier = Modifier.padding(14.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.Top,
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.WarningAmber,
-                    contentDescription = null,
-                    tint = Color(0xFF2563EB),
-                    modifier = Modifier.size(20.dp),
-                )
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "Lưu ý:",
-                        style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.SemiBold),
-                        color = Color(0xFF1E3A8A),
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = "• Phản ánh khẩn cấp sẽ được xử lý trong vòng 4h\n" +
-                            "• Bạn sẽ nhận mã số theo dõi sau khi gửi\n" +
-                            "• Thông tin liên hệ lấy từ hồ sơ đã đăng ký",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFF1D4ED8),
-                    )
-                }
-            }
-        }
-
-        errorMessage?.let { msg ->
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
-                border = BorderStroke(1.dp, Color(0xFFEF9A9A)),
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
+            errorMessage?.let { msg ->
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
+                    border = BorderStroke(1.dp, Color(0xFFEF9A9A)),
                 ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = msg,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFFC62828),
+                            modifier = Modifier.weight(1f),
+                        )
+                        Spacer(Modifier.size(10.dp))
+                        Text(
+                            text = "Đóng",
+                            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+                            color = Color(0xFFC62828),
+                            modifier = Modifier.clickable(onClick = onDismissError),
+                        )
+                    }
+                }
+            }
+
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                androidx.compose.material3.OutlinedButton(
+                    onClick = { currentStep = 1 },
+                    modifier = Modifier.weight(1f).height(56.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    border = BorderStroke(1.dp, Color(0xFF2563EB)),
+                ) {
+                    Text("Quay lại", style = MaterialTheme.typography.titleMedium, color = Color(0xFF2563EB))
+                }
+
+                val canSubmit = description.isNotBlank()
+                Button(
+                    onClick = onSubmit,
+                    enabled = canSubmit && !isSubmitting,
+                    modifier = Modifier.weight(1f).height(56.dp),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp),
+                ) {
+                    if (!isSubmitting) {
+                        Icon(Icons.Filled.Send, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.size(8.dp))
+                    }
                     Text(
-                        text = msg,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color(0xFFC62828),
-                        modifier = Modifier.weight(1f),
-                    )
-                    Spacer(Modifier.size(10.dp))
-                    Text(
-                        text = "Đóng",
-                        style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
-                        color = Color(0xFFC62828),
-                        modifier = Modifier.clickable(onClick = onDismissError),
+                        if (isSubmitting) "Đang gửi..." else "Gửi",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White,
                     )
                 }
             }
+            Spacer(Modifier.height(6.dp))
         }
-
-        val canSubmit = selectedIssue != null && address.isNotBlank() && description.isNotBlank()
-        Button(
-            onClick = onSubmit,
-            enabled = canSubmit && !isSubmitting,
-            modifier = Modifier.fillMaxWidth().height(56.dp),
-            shape = RoundedCornerShape(18.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2563EB)),
-            elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp),
-        ) {
-            Icon(Icons.Filled.Send, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.size(10.dp))
-            Text(
-                if (isSubmitting) "Đang gửi..." else "Gửi phản ánh",
-                style = MaterialTheme.typography.titleMedium,
-                color = Color.White,
-            )
-        }
-        Spacer(Modifier.height(6.dp))
     }
 }
 

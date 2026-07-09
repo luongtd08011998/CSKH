@@ -5,8 +5,13 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.ui.graphics.graphicsLayer
+import kotlin.math.absoluteValue
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import com.example.cskh.presentation.components.bounceClick
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -333,7 +338,7 @@ private fun HomeHero(
                 Surface(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable(onClick = onOpenProfile),
+                        .bounceClick(onClick = onOpenProfile),
                     shape = RoundedCornerShape(18.dp),
                     color = Color.White.copy(alpha = 0.15f),
                 ) {
@@ -686,7 +691,7 @@ private fun MenuIconCard(
     Column(
         modifier = modifier
             .wrapContentHeight()
-            .clickable(onClick = item.onClick)
+            .bounceClick(onClick = item.onClick)
             .padding(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -747,10 +752,10 @@ private fun CompanyBannerCarousel() {
     LaunchedEffect(Unit) {
         while (true) {
             yield()
-            delay(3000)
+            delay(3500)
             pagerState.animateScrollToPage(
                 page = (pagerState.currentPage + 1) % pagerState.pageCount,
-                animationSpec = tween(600)
+                animationSpec = tween(800)
             )
         }
     }
@@ -758,12 +763,30 @@ private fun CompanyBannerCarousel() {
     Column(modifier = Modifier.fillMaxWidth()) {
         HorizontalPager(
             state = pagerState,
-            modifier = Modifier.fillMaxWidth().height(280.dp),
+            modifier = Modifier.fillMaxWidth().height(260.dp),
+            contentPadding = PaddingValues(horizontal = 24.dp),
+            pageSpacing = 12.dp,
         ) { page ->
+            // Tính toán khoảng cách (offset) từ trang hiện tại để tạo hiệu ứng thu phóng
+            val pageOffset = (
+                (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
+            ).absoluteValue
+            
+            // Hàm chuyển đổi (lerp) cho scale và alpha
+            val fraction = 1f - pageOffset.coerceIn(0f, 1f)
+            val scale = 0.85f + (0.15f * fraction)
+            val alpha = 0.5f + (0.5f * fraction)
+
             Card(
-                modifier = Modifier.fillMaxSize(),
-                shape = RoundedCornerShape(0.dp),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                modifier = Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                        this.alpha = alpha
+                    },
+                shape = RoundedCornerShape(16.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = if (pageOffset == 0f) 8.dp else 2.dp)
             ) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -779,9 +802,9 @@ private fun CompanyBannerCarousel() {
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-        // Dấu chấm tròn chỉ báo (Dots Indicator)
+        // Dấu chấm tròn chỉ báo (Dots Indicator) có hiệu ứng smooth
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
@@ -789,8 +812,14 @@ private fun CompanyBannerCarousel() {
         ) {
             repeat(pageCount) { iteration ->
                 val isSelected = pagerState.currentPage == iteration
-                val color = if (isSelected) bannerBlue else Color(0xFFE0E0E0)
-                val width = if (isSelected) 16.dp else 8.dp
+                val color by animateColorAsState(
+                    targetValue = if (isSelected) bannerBlue else Color(0xFFE0E0E0),
+                    animationSpec = tween(300)
+                )
+                val width by animateDpAsState(
+                    targetValue = if (isSelected) 24.dp else 8.dp,
+                    animationSpec = tween(300)
+                )
                 Box(
                     modifier = Modifier
                         .padding(horizontal = 4.dp)
@@ -886,7 +915,7 @@ private fun ContactLine(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .bounceClick(onClick = onClick),
         verticalAlignment = Alignment.Top,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -945,7 +974,7 @@ private fun ServiceGridCard(
     Card(
         modifier = modifier
             .heightIn(min = 132.dp)
-            .clickable(onClick = item.onClick),
+            .bounceClick(onClick = item.onClick),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = serviceCardBg),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),

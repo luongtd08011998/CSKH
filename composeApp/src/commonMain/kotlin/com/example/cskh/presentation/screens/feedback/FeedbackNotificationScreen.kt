@@ -111,7 +111,7 @@ fun FeedbackNotificationScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color(0xFFEF6C00),   // Màu cam - nhất quán với icon Phản ánh
+                    containerColor = Color(0xFF1976D2),
                     titleContentColor = Color.White,
                 ),
                 windowInsets = WindowInsets(0, 0, 0, 0),

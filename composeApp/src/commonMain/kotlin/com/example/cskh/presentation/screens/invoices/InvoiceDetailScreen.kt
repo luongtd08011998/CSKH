@@ -81,6 +81,11 @@ import com.example.cskh.presentation.components.SkeletonCircle
 import com.example.cskh.platform.QrPngSaver
 import com.example.cskh.util.formatVnd
 import kotlin.math.roundToLong
+import kotlin.math.roundToInt
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.runtime.LaunchedEffect
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
@@ -769,7 +774,7 @@ private fun WaterUsageCard(d: InvoiceDetail) {
                     bg = Color(0xFFE3F2FD),
                     icon = Icons.Filled.WaterDrop,
                     iconTint = Color(0xFF1976D2),
-                    value = "${d.oldVal ?: "—"}",
+                    value = d.oldVal,
                     caption = "Chỉ số cũ (m³)",
                 )
                 WaterStatBox(
@@ -777,7 +782,7 @@ private fun WaterUsageCard(d: InvoiceDetail) {
                     bg = Color(0xFFE8F5E9),
                     icon = Icons.AutoMirrored.Filled.TrendingUp,
                     iconTint = Color(0xFF43A047),
-                    value = "${d.newVal ?: "—"}",
+                    value = d.newVal,
                     caption = "Chỉ số mới (m³)",
                 )
                 WaterStatBox(
@@ -785,7 +790,7 @@ private fun WaterUsageCard(d: InvoiceDetail) {
                     bg = Color(0xFFFFF3E0),
                     icon = Icons.AutoMirrored.Filled.ReceiptLong,
                     iconTint = Color(0xFFE65100),
-                    value = "$used",
+                    value = used,
                     caption = "Tiêu thụ (m³)",
                 )
             }
@@ -816,8 +821,18 @@ private fun WaterUsageCard(d: InvoiceDetail) {
                     }
                     Column {
                         Text("Lượng nước sử dụng", style = MaterialTheme.typography.bodyMedium, color = Color(0xFF424242))
+                        
+                        var animatedUsed by remember { mutableStateOf(0) }
+                        LaunchedEffect(used) {
+                            animate(
+                                initialValue = 0f,
+                                targetValue = used.toFloat(),
+                                animationSpec = tween(1500, easing = FastOutSlowInEasing)
+                            ) { v, _ -> animatedUsed = v.roundToInt() }
+                        }
+                        
                         Text(
-                            text = "$used m³",
+                            text = "$animatedUsed m³",
                             style = MaterialTheme.typography.headlineSmall.copy(
                                 fontWeight = FontWeight.SemiBold,
                                 color = Color(0xFF1565C0),
@@ -836,9 +851,21 @@ private fun WaterStatBox(
     bg: Color,
     icon: ImageVector,
     iconTint: Color,
-    value: String,
+    value: Int?,
     caption: String,
 ) {
+    val targetVal = value ?: 0
+    var animatedValue by remember { mutableStateOf(0) }
+    
+    LaunchedEffect(targetVal) {
+        if (value != null) {
+            animate(
+                initialValue = 0f,
+                targetValue = targetVal.toFloat(),
+                animationSpec = tween(1500, easing = FastOutSlowInEasing)
+            ) { v, _ -> animatedValue = v.roundToInt() }
+        }
+    }
     Column(
         modifier = modifier
             .background(bg, RoundedCornerShape(12.dp))
@@ -848,7 +875,7 @@ private fun WaterStatBox(
         Icon(icon, null, modifier = Modifier.size(26.dp), tint = iconTint)
         Spacer(modifier = Modifier.height(6.dp))
         Text(
-            text = value,
+            text = if (value != null) animatedValue.toString() else "—",
             style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
             color = Color(0xFF212121),
         )
@@ -917,8 +944,19 @@ private fun PaymentBreakdownCard(d: InvoiceDetail) {
                         color = Color(0xFF212121),
                     )
                 }
+                var animatedTotal by remember { mutableStateOf(0.0) }
+                val targetTotal = d.totalAmount ?: (d.amount + d.envFee + d.taxFee)
+                
+                LaunchedEffect(targetTotal) {
+                    animate(
+                        initialValue = 0f,
+                        targetValue = targetTotal.toFloat(),
+                        animationSpec = tween(1500, easing = FastOutSlowInEasing)
+                    ) { v, _ -> animatedTotal = v.toDouble() }
+                }
+
                 Text(
-                    text = (d.totalAmount ?: (d.amount + d.envFee + d.taxFee)).formatVnd(),
+                    text = animatedTotal.formatVnd(),
                     style = MaterialTheme.typography.headlineSmall.copy(
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF1565C0),

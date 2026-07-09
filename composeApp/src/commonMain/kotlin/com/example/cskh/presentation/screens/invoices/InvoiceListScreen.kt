@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import com.example.cskh.presentation.components.bounceClick
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -53,6 +54,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -360,6 +362,18 @@ private fun CustomerInfoCard(
 @Composable
 private fun InvoiceAreaChart(data: List<Pair<String, Int>>) {
     val textMeasurer = rememberTextMeasurer()
+    
+    val animationProgress = remember { androidx.compose.animation.core.Animatable(0f) }
+    androidx.compose.runtime.LaunchedEffect(data) {
+        animationProgress.animateTo(
+            targetValue = 1f,
+            animationSpec = androidx.compose.animation.core.tween(
+                durationMillis = 2000, 
+                easing = androidx.compose.animation.core.FastOutSlowInEasing
+            )
+        )
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
@@ -397,7 +411,11 @@ private fun InvoiceAreaChart(data: List<Pair<String, Int>>) {
                         .padding(start = 36.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
                 ) {
                     val chartH = 155.dp.toPx()    // chart drawing area
-                    drawAreaChart(amounts, maxVal, minVal, range, chartH)
+                    
+                    clipRect(right = size.width * animationProgress.value) {
+                        drawAreaChart(amounts, maxVal, minVal, range, chartH)
+                    }
+                    
                     drawXAxisLabels(labels, textMeasurer, chartH)
                 }
             }
@@ -591,17 +609,44 @@ private fun InvoiceTable(
                 }
             } else {
                 items.forEachIndexed { idx, processed ->
-                    InvoiceTableRow(
-                        processed = processed,
-                        isEven = idx % 2 == 0,
-                        onOpenDetail = onOpenDetail,
-                    )
-                    if (idx < items.lastIndex) {
-                        HorizontalDivider(color = Color(0xFFEEEEEE))
+                    StaggeredListItem(index = idx) {
+                        Column {
+                            InvoiceTableRow(
+                                processed = processed,
+                                isEven = idx % 2 == 0,
+                                onOpenDetail = onOpenDetail,
+                            )
+                            if (idx < items.lastIndex) {
+                                HorizontalDivider(color = Color(0xFFEEEEEE))
+                            }
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun StaggeredListItem(
+    index: Int,
+    content: @Composable () -> Unit
+) {
+    val visible = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(false) }
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay((index * 100L).coerceAtMost(1000L))
+        visible.value = true
+    }
+    androidx.compose.animation.AnimatedVisibility(
+        visible = visible.value,
+        enter = androidx.compose.animation.fadeIn(animationSpec = androidx.compose.animation.core.tween(500)) + 
+                androidx.compose.animation.slideInVertically(
+                    initialOffsetY = { 50 },
+                    animationSpec = androidx.compose.animation.core.tween(500, easing = androidx.compose.animation.core.FastOutSlowInEasing)
+                ),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        content()
     }
 }
 
@@ -631,7 +676,7 @@ private fun InvoiceTableRow(
         modifier = Modifier
             .fillMaxWidth()
             .background(rowBg)
-            .clickable { onOpenDetail(invoice.id) }
+            .bounceClick { onOpenDetail(invoice.id) }
             .padding(horizontal = 12.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

@@ -26,6 +26,7 @@ import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -47,6 +48,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
+import androidx.compose.material.icons.filled.Feedback
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
@@ -243,8 +246,20 @@ private fun MainNavHost(
                             launchSingleTop = true
                         }
                     },
+                    onSelectInvoices = {
+                        navController.navigate(Screen.Invoices) {
+                            popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    },
                     onSelectNotifications = {
                         navController.navigate(Screen.Notifications(initialTab = 0)) {
+                            popUpTo(navController.graph.startDestinationId) { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    },
+                    onSelectFeedback = {
+                        navController.navigate(Screen.PhanAnh) {
                             popUpTo(navController.graph.startDestinationId) { inclusive = false }
                             launchSingleTop = true
                         }
@@ -308,7 +323,26 @@ private fun MainNavHost(
                         onLogout = onLogout,
                     )
                 }
-                composable<Screen.InvoiceDetail> { entry ->
+                composable<Screen.InvoiceDetail>(
+                    enterTransition = {
+                        slideIntoContainer(
+                            towards = AnimatedContentTransitionScope.SlideDirection.Left,
+                            animationSpec = tween(300)
+                        ) + fadeIn(animationSpec = tween(300))
+                    },
+                    exitTransition = {
+                        fadeOut(animationSpec = tween(300))
+                    },
+                    popEnterTransition = {
+                        fadeIn(animationSpec = tween(300))
+                    },
+                    popExitTransition = {
+                        slideOutOfContainer(
+                            towards = AnimatedContentTransitionScope.SlideDirection.Right,
+                            animationSpec = tween(300)
+                        ) + fadeOut(animationSpec = tween(300))
+                    }
+                ) { entry ->
                     val route: Screen.InvoiceDetail = entry.toRoute()
                     InvoiceDetailScreen(
                         invoiceId = route.id,
@@ -419,12 +453,19 @@ private fun AppBottomBar(
     unreadNotificationCount: Int,
     currentDestination: androidx.navigation.NavDestination?,
     onSelectHome: () -> Unit,
+    onSelectInvoices: () -> Unit,
     onSelectNotifications: () -> Unit,
+    onSelectFeedback: () -> Unit,
     onSelectProfile: () -> Unit,
 ) {
     val selectedHome = currentDestination?.hierarchy?.any { it.route?.contains("Home") == true } == true
+    val selectedInvoices = currentDestination?.hierarchy?.any { it.route?.contains("Invoice") == true } == true
     val selectedNotifications =
-        currentDestination?.hierarchy?.any { it.route?.contains("Notifications") == true } == true
+        currentDestination?.hierarchy?.any { 
+            val r = it.route
+            r != null && r.contains("Notifications") && !r.contains("Feedback")
+        } == true
+    val selectedFeedback = currentDestination?.hierarchy?.any { it.route?.contains("PhanAnh") == true || it.route?.contains("Feedback") == true } == true
     val selectedProfile =
         currentDestination?.hierarchy?.any { it.route?.contains("CustomerProfile") == true } == true
 
@@ -445,7 +486,13 @@ private fun AppBottomBar(
                 selected = selectedHome,
                 onClick = onSelectHome,
                 icon = { Icon(Icons.Filled.Home, contentDescription = null, modifier = Modifier.size(24.dp)) },
-                label = { Text("Trang chủ") },
+                label = { Text("Trang chủ", maxLines = 1) },
+            )
+            NavigationBarItem(
+                selected = selectedInvoices,
+                onClick = onSelectInvoices,
+                icon = { Icon(Icons.AutoMirrored.Filled.ReceiptLong, contentDescription = null, modifier = Modifier.size(24.dp)) },
+                label = { Text("Hóa đơn", maxLines = 1) },
             )
             NavigationBarItem(
                 selected = selectedNotifications,
@@ -466,13 +513,19 @@ private fun AppBottomBar(
                         Icon(Icons.Filled.Notifications, contentDescription = null, modifier = Modifier.size(24.dp))
                     }
                 },
-                label = { Text("Thông báo") },
+                label = { Text("Thông báo", maxLines = 1) },
+            )
+            NavigationBarItem(
+                selected = selectedFeedback,
+                onClick = onSelectFeedback,
+                icon = { Icon(Icons.Filled.Feedback, contentDescription = null, modifier = Modifier.size(24.dp)) },
+                label = { Text("Phản ánh", maxLines = 1) },
             )
             NavigationBarItem(
                 selected = selectedProfile,
                 onClick = onSelectProfile,
                 icon = { Icon(Icons.Filled.Person, contentDescription = null, modifier = Modifier.size(24.dp)) },
-                label = { Text("Tài khoản") },
+                label = { Text("Tài khoản", maxLines = 1) },
             )
         }
     }

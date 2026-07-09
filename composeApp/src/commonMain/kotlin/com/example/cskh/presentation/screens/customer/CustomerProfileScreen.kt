@@ -200,13 +200,7 @@ private fun CustomerProfileScrollContent(
                     ),
                     modifier = Modifier.weight(1f),
                 )
-                IconButton(onClick = { /* placeholder */ }) {
-                    Icon(
-                        imageVector = Icons.Filled.Settings,
-                        contentDescription = null,
-                        tint = Color.White.copy(alpha = 0.9f),
-                    )
-                }
+                Spacer(modifier = Modifier.size(48.dp))
             }
 
             Surface(
@@ -583,15 +577,14 @@ private fun AccountStatusTile(
 
 @Composable
 private fun LogoutButton(onLogout: () -> Unit) {
-    Button(
+    androidx.compose.material3.OutlinedButton(
         onClick = onLogout,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.error,
-            contentColor = MaterialTheme.colorScheme.onError,
+        colors = ButtonDefaults.outlinedButtonColors(
+            contentColor = Color(0xFFD32F2F),
         ),
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp),
+        border = BorderStroke(1.5.dp, Color(0xFFD32F2F)),
     ) {
         Icon(
             imageVector = Icons.Filled.Logout,
@@ -599,6 +592,10 @@ private fun LogoutButton(onLogout: () -> Unit) {
             modifier = Modifier.size(18.dp),
         )
         Spacer(modifier = Modifier.size(10.dp))
-        Text("Đăng xuất", modifier = Modifier.padding(vertical = 6.dp))
+        Text(
+            "Đăng xuất", 
+            modifier = Modifier.padding(vertical = 6.dp),
+            fontWeight = FontWeight.Bold
+        )
     }
 }
