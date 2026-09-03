@@ -128,11 +128,12 @@ private fun String.percentEncode(): String {
 private fun buildVietQrQuickLinkUrl(detail: InvoiceDetail): String {
     val code = detail.digiCode?.trim().orEmpty()
     val ym = detail.yearMonth?.trim().orEmpty()
+    val blank = detail.blankNo?.trim().orEmpty()
     val addInfo = buildString {
-        append("TOCTIEN ")
-        if (code.isNotEmpty()) append("$code ")
-        if (ym.isNotEmpty()) append(ym)
-
+        append("TOCTIEN")
+        if (code.isNotEmpty()) append(" $code")
+        if (ym.isNotEmpty()) append(" $ym")
+        if (blank.isNotEmpty()) append(" $blank")
     }
     val total = detail.totalAmount ?: (detail.amount + detail.envFee + detail.taxFee)
     val amount = total.roundToLong()

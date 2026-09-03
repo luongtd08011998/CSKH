@@ -45,6 +45,8 @@ data class InvoiceListItemDto(
     val newVal: Int? = null,
     val fkey: String? = null,
     val blankNo: String? = null,
+    val invStatus: Int? = null,
+    val invStatusLabel: String? = null,
 )
 
 @Serializable
@@ -71,6 +73,7 @@ data class InvoiceDetailDto(
     val numOfHouseHold: Int? = null,
     val fkey: String? = null,
     val blankNo: String? = null,
+    val invStatusLabel: String? = null,
 )
 
 fun MetaDto.toDomain(): PageMeta = PageMeta(
@@ -95,6 +98,8 @@ fun InvoiceListItemDto.toDomain(): InvoiceSummary = InvoiceSummary(
     newVal = newVal ?: 0,
     fkey = fkey.orEmpty(),
     blankNo = blankNo,
+    invStatus = invStatus ?: 0,
+    invStatusLabel = invStatusLabel ?: "Không xác định",
 )
 
 fun InvoiceDetailDto.toDomain(): InvoiceDetail {
@@ -126,12 +131,14 @@ fun InvoiceDetailDto.toDomain(): InvoiceDetail {
         numOfHouseHold = numOfHouseHold,
         fkey = fkey,
         blankNo = blankNo,
+        invStatus = invStatus ?: 0,
+        invStatusLabel = invStatusLabel ?: "Không xác định",
     )
 }
 
 fun InvoicesPageDataDto.toDomain(): PagedInvoices = PagedInvoices(
     meta = meta?.toDomain() ?: PageMeta(1, 20, 1, 0),
-    items = (result ?: items)?.map { it.toDomain() }?.filter { it.fkey.isNotBlank() } ?: emptyList(),
+    items = (result ?: items)?.map { it.toDomain() }?.filter { it.fkey.isNotBlank() && it.invStatus != 7 } ?: emptyList(),
 )
 
 @Serializable

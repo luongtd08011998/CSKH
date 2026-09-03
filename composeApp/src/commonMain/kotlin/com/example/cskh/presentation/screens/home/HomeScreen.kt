@@ -44,8 +44,10 @@ import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Badge
 import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material.icons.filled.Phone
@@ -135,6 +137,7 @@ fun HomeScreen(
     onNavigateCustomerProfile: () -> Unit,
     onNavigateWaterPrice: () -> Unit,
     onNavigateAbout: () -> Unit,
+    onNavigateOther: () -> Unit,
     onNavigatePhanAnh: () -> Unit,
     onNavigateFeedbackNotifications: () -> Unit = {},
     onLogout: () -> Unit,
@@ -174,16 +177,8 @@ fun HomeScreen(
             onClick = onNavigateInvoices,
         ),
         HomeServiceCard(
-            title = "Bảng giá nước",
-            subtitle = "Xem bảng giá",
-            icon = Icons.Filled.AttachMoney,
-            iconBackground = Color(0xFFD1FAE5), // green-100
-            iconTint = Color(0xFF059669), // green-600
-            onClick = onNavigateWaterPrice,
-        ),
-        HomeServiceCard(
-            title = "Phản ánh",
-            subtitle = "Gửi phản ánh",
+            title = "Báo cáo sự cố",
+            subtitle = "Gửi báo cáo",
             icon = Icons.Filled.Feedback,
             iconBackground = Color(0xFFFFF3E0), // orange-100
             iconTint = Color(0xFFEF6C00), // orange-600
@@ -191,12 +186,20 @@ fun HomeScreen(
             onClick = onNavigateFeedbackNotifications,
         ),
         HomeServiceCard(
-            title = "Giới thiệu",
-            subtitle = "Về chúng tôi",
-            icon = Icons.Filled.Info,
+            title = "Thông tin khách hàng",
+            subtitle = "Hồ sơ khách hàng",
+            icon = Icons.Filled.AccountCircle,
+            iconBackground = Color(0xFFE0F2FE), // sky-100
+            iconTint = Color(0xFF0284C7), // sky-600
+            onClick = onNavigateCustomerProfile,
+        ),
+        HomeServiceCard(
+            title = "Khác",
+            subtitle = "Xem thêm",
+            icon = Icons.Filled.MoreHoriz,
             iconBackground = Color(0xFFF3E8FF), // purple-100
             iconTint = Color(0xFF9333EA), // purple-600
-            onClick = onNavigateAbout,
+            onClick = onNavigateOther,
         ),
     )
 

@@ -58,6 +58,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.NavDestination.Companion.hierarchy
 import com.example.cskh.data.session.SessionManager
 import com.example.cskh.di.CskhKoinHost
+import com.example.cskh.domain.repository.AppConfigRepository
+import com.example.cskh.domain.preferences.UserFormStore
 import com.example.cskh.presentation.NotificationBadgeStore
 import com.example.cskh.presentation.navigation.Screen
 import com.example.cskh.presentation.screens.customer.CustomerProfileScreen
@@ -74,6 +76,9 @@ import com.example.cskh.presentation.screens.splash.SplashScreen
 import com.example.cskh.presentation.screens.static.AboutScreen
 import com.example.cskh.presentation.screens.register.RegisterScreen
 import com.example.cskh.presentation.screens.static.WaterPriceScreen
+import com.example.cskh.presentation.screens.other.OtherScreen
+import com.example.cskh.presentation.screens.changeinfo.ChangeInfoScreen
+import com.example.cskh.presentation.screens.update.ForceUpdateScreen
 import com.example.cskh.presentation.theme.CskhTheme
 import com.example.cskh.platform.FcmDeviceSync
 import com.example.cskh.platform.NotificationPermissionGate
@@ -127,6 +132,8 @@ private fun MainNavHost(
     val notificationBadgeStore = koinInject<NotificationBadgeStore>()
     val pushNavigationBus = koinInject<PushNavigationBus>()
     val fcmDeviceSync = koinInject<FcmDeviceSync>()
+    val appConfigRepository = koinInject<AppConfigRepository>()
+    val userFormStore = koinInject<UserFormStore>()
     val unreadNotificationCount by notificationBadgeStore.unreadCount.collectAsState()
     val navController = rememberNavController()
 
@@ -136,6 +143,28 @@ private fun MainNavHost(
 
     // ── Giai đoạn 1: Splash Screen ──
     var showSplash by remember { mutableStateOf(true) }
+
+    // ── Force Update state ──
+    // null = chưa biết, true = cần update bắt buộc
+    var forceUpdateStoreUrl by remember { mutableStateOf<String?>(null) }
+    var forceUpdateReleaseNotes by remember { mutableStateOf<String?>(null) }
+
+    // Kiểm tra version sau khi Splash xong
+    LaunchedEffect(showSplash) {
+        if (!showSplash) {
+            val baseUrl = userFormStore.loadBaseUrl()
+            val platform = getPlatform().platformType // "ANDROID" hoặc "IOS"
+            val currentVersionCode = getAppVersionCode()
+            appConfigRepository.getLatestConfig(baseUrl, platform)
+                .onSuccess { config ->
+                    if (currentVersionCode < config.minRequiredVersionCode) {
+                        forceUpdateStoreUrl = config.storeUrl
+                        forceUpdateReleaseNotes = config.releaseNotes
+                    }
+                }
+                // onFailure: bỏ qua lỗi mạng, cho vào app bình thường
+        }
+    }
 
     val startDestination: Screen = remember {
         if (!sessionManager.accessToken.isNullOrBlank()) {
@@ -234,6 +263,15 @@ private fun MainNavHost(
             return@AnimatedContent
         }
 
+        // Sau Splash: kiểm tra Force Update trước
+        if (forceUpdateStoreUrl != null) {
+            ForceUpdateScreen(
+                storeUrl = forceUpdateStoreUrl!!,
+                releaseNotes = forceUpdateReleaseNotes,
+            )
+            return@AnimatedContent
+        }
+
         Scaffold(
             bottomBar = {
             if (showBottomBar) {
@@ -309,6 +347,7 @@ private fun MainNavHost(
                         onNavigateCustomerProfile = { navController.navigate(Screen.CustomerProfile) },
                         onNavigateWaterPrice = { navController.navigate(Screen.WaterPrice) },
                         onNavigateAbout = { navController.navigate(Screen.About) },
+                        onNavigateOther = { navController.navigate(Screen.Other) },
                         onNavigatePhanAnh = { navController.navigate(Screen.PhanAnh) },
                         onNavigateFeedbackNotifications = { navController.navigate(Screen.FeedbackNotifications) },
                         onLogout = onLogout,
@@ -384,6 +423,21 @@ private fun MainNavHost(
                 }
                 composable<Screen.WaterPrice> {
                     WaterPriceScreen(onBack = { navController.popBackStack() })
+                }
+                composable<Screen.Other> {
+                    OtherScreen(
+                        onBack = { navController.popBackStack() },
+                        onNavigateAbout = { navController.navigate(Screen.About) },
+                        onNavigateWaterPrice = { navController.navigate(Screen.WaterPrice) },
+                        onNavigateRegister = { navController.navigate(Screen.Register) },
+                        onNavigateChangeInfo = { navController.navigate(Screen.ChangeInfo) },
+                    )
+                }
+                composable<Screen.ChangeInfo> {
+                    ChangeInfoScreen(
+                        onBack = { navController.popBackStack() },
+                        onLogout = onLogout,
+                    )
                 }
                 composable<Screen.About> {
                     AboutScreen(onBack = { navController.popBackStack() })

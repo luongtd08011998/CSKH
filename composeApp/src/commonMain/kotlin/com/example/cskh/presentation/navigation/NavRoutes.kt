@@ -28,6 +28,12 @@ sealed interface Screen {
     data object About : Screen
 
     @Serializable
+    data object Other : Screen
+
+    @Serializable
+    data object ChangeInfo : Screen
+
+    @Serializable
     data object PhanAnh : Screen
 
     @Serializable

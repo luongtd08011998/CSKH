@@ -58,7 +58,7 @@ import cskh.composeapp.generated.resources.Res
 import cskh.composeapp.generated.resources.logocty1
 
 private const val CompanyName = "Công ty TNHH cấp nước Tóc Tiên"
-private const val CompanyAddress = "Ấp 6, Xã Châu Pha, Thành phố Hồ Chí Minh, Việt Nam."
+private const val CompanyAddress = "Ấp Tóc Tiên 1, Xã Châu Pha, Thành phố Hồ Chí Minh, Việt Nam."
 private const val CompanyDirector = "Phan Thanh Hải"
 private const val CompanyTaxCode = "3500815711"
 private const val CompanyBankAccount = "008.1000.127.995"

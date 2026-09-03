@@ -21,6 +21,8 @@ import com.example.cskh.domain.repository.DeviceRepository
 import com.example.cskh.domain.repository.FeedbackRepository
 import com.example.cskh.domain.repository.InvoiceRepository
 import com.example.cskh.domain.repository.NotificationRepository
+import com.example.cskh.data.repository.AppConfigRepositoryImpl
+import com.example.cskh.domain.repository.AppConfigRepository
 import com.example.cskh.domain.repository.RegisterRepository
 import com.example.cskh.domain.repository.MaintenanceArticleRepository
 import com.example.cskh.domain.repository.FeaturedArticleRepository
@@ -63,6 +65,7 @@ import com.example.cskh.presentation.screens.phananh.PhanAnhDetailViewModel
 import com.example.cskh.presentation.screens.phananh.PhanAnhListViewModel
 import com.example.cskh.presentation.screens.phananh.PhanAnhViewModel
 import com.example.cskh.presentation.screens.feedback.FeedbackNotificationViewModel
+import com.example.cskh.presentation.screens.changeinfo.ChangeInfoViewModel
 import com.example.cskh.platform.FcmDeviceSync
 import com.russhwolf.settings.Settings
 import com.example.cskh.util.PushNavigationBus
@@ -106,6 +109,7 @@ val appModule = module {
     single<DeviceRepository> { DeviceRepositoryImpl(get()) }
     single<NotificationRepository> { NotificationRepositoryImpl(get(), get()) }
     single<FeedbackRepository> { FeedbackRepositoryImpl(get(), get()) }
+    single<AppConfigRepository> { AppConfigRepositoryImpl(get()) }
     single<RegisterRepository> { RegisterRepositoryImpl() }
     single { RegisterFcmDeviceUseCase(get(), get()) }
     single { UnregisterFcmDeviceUseCase(get(), get()) }
@@ -141,4 +145,5 @@ val appModule = module {
         ) 
     }
     viewModel { FeedbackNotificationViewModel(get(), get(), get(), get(), get()) }
+    viewModel { ChangeInfoViewModel(get(), get(), get(), get()) }
 }

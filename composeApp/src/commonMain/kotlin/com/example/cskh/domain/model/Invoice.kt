@@ -22,6 +22,8 @@ data class InvoiceSummary(
     val newVal: Int,
     val fkey: String = "",
     val blankNo: String? = null,
+    val invStatus: Int = 0,
+    val invStatusLabel: String = "Không xác định",
 )
 
 data class PagedInvoices(
@@ -50,6 +52,8 @@ data class InvoiceDetail(
     val numOfHouseHold: Int?,
     val fkey: String? = null,
     val blankNo: String? = null,
+    val invStatus: Int = 0,
+    val invStatusLabel: String = "Không xác định",
 )
 
 enum class InvoiceDisplayType { Normal, Replacement, Replaced }

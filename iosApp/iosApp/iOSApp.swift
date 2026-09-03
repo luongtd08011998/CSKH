@@ -65,8 +65,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
         guard let rootVC = UIApplication.shared.connectedScenes
             .compactMap({ $0 as? UIWindowScene })
-            .compactMap({ $0.keyWindow })
-            .first?.rootViewController else { return }
+            .flatMap({ $0.windows })
+            .first(where: { $0.isKeyWindow })?
+            .rootViewController else { return }
         var topVC = rootVC
         while let presented = topVC.presentedViewController {
             topVC = presented
@@ -89,8 +90,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     private func presentHtmlViewer(filePath: String) {
         guard let rootVC = UIApplication.shared.connectedScenes
             .compactMap({ $0 as? UIWindowScene })
-            .compactMap({ $0.keyWindow })
-            .first?.rootViewController else { return }
+            .flatMap({ $0.windows })
+            .first(where: { $0.isKeyWindow })?
+            .rootViewController else { return }
         var topVC = rootVC
         while let presented = topVC.presentedViewController {
             topVC = presented

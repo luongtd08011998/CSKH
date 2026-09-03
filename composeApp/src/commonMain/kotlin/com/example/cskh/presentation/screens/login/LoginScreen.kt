@@ -51,11 +51,20 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.RichTooltip
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,9 +81,16 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.PopupPositionProvider
 import com.example.cskh.presentation.CompanyBranding
 import com.example.cskh.presentation.components.AuthLoadingOverlay
+import kotlinx.coroutines.launch
 import org.koin.compose.viewmodel.koinViewModel
 import org.jetbrains.compose.resources.painterResource
 import cskh.composeapp.generated.resources.Res
@@ -102,6 +118,7 @@ private val buttonDisabledBrush = Brush.horizontalGradient(
     colors = listOf(Color(0xFFBDBDBD), Color(0xFF9E9E9E)),
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LoginScreen(
     onLoggedIn: () -> Unit,
@@ -276,11 +293,73 @@ fun LoginScreen(
                     )
 
                     Spacer(modifier = Modifier.height(14.dp))
-                    Text(
-                        text = "Số điện thoại",
-                        style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                        color = Color(0xFF424242),
-                    )
+
+                    // TooltipBox neo vào icon ℹ️, hiện phía dưới icon
+                    val phoneTooltipState = rememberTooltipState(isPersistent = true)
+                    val tooltipScope = rememberCoroutineScope()
+                    val density = LocalDensity.current
+
+                    // Custom provider: luôn đặt tooltip PHÍA TRÊN anchor, căn lề trái
+                    val aboveAnchorProvider = remember {
+                        object : PopupPositionProvider {
+                            override fun calculatePosition(
+                                anchorBounds: IntRect,
+                                windowSize: IntSize,
+                                layoutDirection: LayoutDirection,
+                                popupContentSize: IntSize,
+                            ): IntOffset {
+                                val gap = with(density) { 6.dp.roundToPx() }
+                                val x = anchorBounds.left
+                                    .coerceIn(0, (windowSize.width - popupContentSize.width).coerceAtLeast(0))
+                                val y = anchorBounds.top - popupContentSize.height - gap
+                                return IntOffset(x, y)
+                            }
+                        }
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        Text(
+                            text = "Số điện thoại",
+                            style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                            color = Color(0xFF424242),
+                        )
+                        TooltipBox(
+                            positionProvider = aboveAnchorProvider,
+                            tooltip = {
+                                RichTooltip(
+                                    colors = TooltipDefaults.richTooltipColors(
+                                        containerColor = Color.White,
+                                        contentColor = Color(0xFF424242),
+                                    ),
+                                ) {
+                                    Text(
+                                        text = "Số điện thoại trong hợp đồng lắp đặt hoặc số điện thoại di động đã đăng ký nhận tin nhắn thông báo qua SMS",
+                                        style = MaterialTheme.typography.bodySmall.copy(lineHeight = 20.sp),
+                                        modifier = Modifier.widthIn(max = 200.dp),
+                                    )
+                                }
+                            },
+                            state = phoneTooltipState,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Info,
+                                contentDescription = "Thông tin số điện thoại",
+                                tint = Color(0xFF1976D2),
+                                modifier = Modifier
+                                    .size(16.dp)
+                                    .clickable(
+                                        indication = null,
+                                        interactionSource = remember { MutableInteractionSource() },
+                                    ) {
+                                        tooltipScope.launch { phoneTooltipState.show() }
+                                    },
+                            )
+                        }
+                    }
+
                     Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = state.phone,
