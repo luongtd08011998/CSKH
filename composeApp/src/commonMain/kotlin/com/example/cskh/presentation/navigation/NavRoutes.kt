@@ -22,6 +22,9 @@ sealed interface Screen {
     data object CustomerProfile : Screen
 
     @Serializable
+    data object CustomerDocuments : Screen
+
+    @Serializable
     data object WaterPrice : Screen
 
     @Serializable

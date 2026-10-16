@@ -63,8 +63,10 @@ class HtmlViewerViewController: UIViewController {
         backBtn.translatesAutoresizingMaskIntoConstraints = false
         backBtn.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
 
+        let isDoc = filePath.contains("cust_documents") || !filePath.contains("hoadon")
+        let saveTitle = isDoc ? "⬇   Lưu hồ sơ về máy" : "⬇   Lưu hóa đơn về máy"
         let saveBtn = UIButton(type: .system)
-        saveBtn.setTitle("⬇   Lưu hóa đơn về máy", for: .normal)
+        saveBtn.setTitle(saveTitle, for: .normal)
         saveBtn.setTitleColor(.white, for: .normal)
         saveBtn.titleLabel?.font = UIFont.boldSystemFont(ofSize: 15)
         saveBtn.layer.cornerRadius = 12
@@ -165,6 +167,14 @@ class HtmlViewerViewController: UIViewController {
                 width: 0, height: 0
             )
             activityVC.popoverPresentationController?.permittedArrowDirections = [.down]
+        }
+
+        activityVC.completionWithItemsHandler = { [weak self] _, completed, _, _ in
+            if completed {
+                let isDoc = self?.filePath.contains("cust_documents") == true || !(self?.filePath.contains("hoadon") ?? false)
+                let msg = isDoc ? "Đã lưu hồ sơ thành công." : "Đã lưu hóa đơn thành công."
+                self?.showAlert(msg)
+            }
         }
 
         present(activityVC, animated: true)

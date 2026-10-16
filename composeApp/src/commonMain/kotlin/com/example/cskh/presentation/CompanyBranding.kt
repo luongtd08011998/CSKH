@@ -5,7 +5,7 @@ object CompanyBranding {
     const val DEV_API_PORT: Int = 8080
 
     const val NAME: String = "Công ty TNHH Cấp nước Tóc Tiên"
-    const val ADDRESS: String = "Ấp Tóc Tiên 1, Xã Châu Pha, Thành Phố Hồ Chí Minh."
+    const val ADDRESS: String = "Ấp Tóc Tiên 1, Xã Châu Pha, Thành phố Hồ Chí Minh, Việt Nam."
     const val PHONE_DISPLAY: String = "0254.3894.894"
     const val PHONE_TEL: String = "02543894894"
     const val EMAIL: String = "office@toctienltd.vn"

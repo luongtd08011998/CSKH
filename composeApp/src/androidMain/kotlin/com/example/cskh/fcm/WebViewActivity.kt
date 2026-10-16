@@ -99,8 +99,9 @@ class WebViewActivity : ComponentActivity() {
                 setOnClickListener { finish() }
             }
 
+            val isDoc = htmlFilePath.contains("cust_documents") || !htmlFilePath.contains("hoadon")
             val saveBtn = TextView(this).apply {
-                text = "⬇   Lưu hóa đơn về máy"
+                text = if (isDoc) "⬇   Lưu hồ sơ về máy" else "⬇   Lưu hóa đơn về máy"
                 textSize = 15f
                 setTextColor(Color.WHITE)
                 typeface = Typeface.DEFAULT_BOLD
@@ -166,7 +167,9 @@ class WebViewActivity : ComponentActivity() {
                 dir.mkdirs()
                 FileOutputStream(File(dir, fileName)).use { out -> src.inputStream().use { it.copyTo(out) } }
             }
-            toast("✅ Đã lưu \"$fileName\" vào Downloads.")
+            val isDoc = htmlFilePath.contains("cust_documents") || !htmlFilePath.contains("hoadon")
+            val successMsg = if (isDoc) "✅ Đã lưu hồ sơ \"$fileName\" vào Downloads." else "✅ Đã lưu \"$fileName\" vào Downloads."
+            toast(successMsg)
         } catch (e: Exception) {
             toast("Lỗi: ${e.message}")
         }

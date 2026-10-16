@@ -124,7 +124,7 @@ fun AboutScreen(onBack: () -> Unit) {
                         Surface(
                             modifier = Modifier.size(56.dp),
                             shape = CircleShape,
-                            color = Color.White,
+                            color = Color.Transparent,
                             shadowElevation = 6.dp,
                         ) {
                             Image(
@@ -132,7 +132,6 @@ fun AboutScreen(onBack: () -> Unit) {
                                 contentDescription = null,
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .padding(2.dp)
                                     .clip(CircleShape),
                                 contentScale = ContentScale.Crop,
                             )

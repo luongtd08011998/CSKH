@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Park
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.QrCode2
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Tag
@@ -101,10 +102,10 @@ private val paidGreenBorder = Color(0xFFA5D6A7)
 private val warnOrangeBg = Color(0xFFFFF3E0)
 private val warnOrangeBorder = Color(0xFFFFCC80)
 
-private const val VietQrBankId = "970415"
-private const val VietQrAccountNo = "113601145666"
+private const val VietQrBankId = "970418"
+private const val VietQrVaPrefix = "V3TTP"
 private const val VietQrTemplate = "J01ctIp"
-private const val VietQrAccountName = "CONG TY TNHH CAP NUOC TOC TIEN"
+private const val VietQrAccountName = "CTY TNHH CAP NUOC TOC TIEN"
 
 private enum class InvoicePaymentKind { Paid, Unpaid, Other }
 
@@ -125,19 +126,24 @@ private fun String.percentEncode(): String {
     }
 }
 
-private fun buildVietQrQuickLinkUrl(detail: InvoiceDetail): String {
+private fun buildVietQrAddInfo(detail: InvoiceDetail): String {
     val code = detail.digiCode?.trim().orEmpty()
     val ym = detail.yearMonth?.trim().orEmpty()
     val blank = detail.blankNo?.trim().orEmpty()
-    val addInfo = buildString {
-        append("TOCTIEN")
+    return buildString {
+        append("CN.TOCTIEN")
         if (code.isNotEmpty()) append(" $code")
         if (ym.isNotEmpty()) append(" $ym")
         if (blank.isNotEmpty()) append(" $blank")
     }
+}
+
+internal fun buildVietQrQuickLinkUrl(detail: InvoiceDetail): String {
+    val addInfo = buildVietQrAddInfo(detail)
     val total = detail.totalAmount ?: (detail.amount + detail.envFee + detail.taxFee)
     val amount = total.roundToLong()
-    val base = "https://img.vietqr.io/image/$VietQrBankId-$VietQrAccountNo-$VietQrTemplate.png"
+    val accountNo = "$VietQrVaPrefix${detail.id}"
+    val base = "https://img.vietqr.io/image/$VietQrBankId-$accountNo-$VietQrTemplate.png"
     return buildString {
         append(base)
         append("?amount=")
@@ -211,7 +217,7 @@ private fun String?.addDays(n: Int): String? {
 }
 
 private fun InvoiceDetail.dueDate(): String {
-    createdDate.addDays(7)?.let { return it }
+    createdDate.addDays(14)?.let { return it }
     return endDate?.takeIf { it.isNotBlank() }?.toDateDisplay()
         ?: startDate?.takeIf { it.isNotBlank() }?.toDateDisplay()
         ?: "—"
@@ -244,7 +250,6 @@ fun InvoiceDetailScreen(
         )
     }
     val clipboard = LocalClipboardManager.current
-    var showVietQrDialog by remember { mutableStateOf(false) }
 
     Box(
         modifier = Modifier
@@ -311,19 +316,10 @@ fun InvoiceDetailScreen(
                         if (!d.isPaid()) {
                             Spacer(modifier = Modifier.height(12.dp))
                             UnpaidWarningCard(d)
-                            Spacer(modifier = Modifier.height(16.dp))
-                            
+
                             if ((d.totalAmount ?: 0.0) > 0 && !isReplacement) {
-                                Button(
-                                    onClick = { showVietQrDialog = true },
-                                    modifier = Modifier.fillMaxWidth().height(50.dp),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1976D2)),
-                                ) {
-                                    Icon(Icons.Filled.CreditCard, null, modifier = Modifier.size(18.dp))
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text("Thanh toán ngay", style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
-                                }
+                                Spacer(modifier = Modifier.height(12.dp))
+                                VietQrCard(d)
                             }
                         }
 
@@ -359,105 +355,136 @@ fun InvoiceDetailScreen(
                 }
             }
         }
-        if (showVietQrDialog && state.detail != null) {
-            val d = state.detail!!
-            VietQrPaymentDialog(
-                imageUrl = buildVietQrQuickLinkUrl(d),
-                onDismiss = { showVietQrDialog = false },
-            )
-        }
+
 
     }
 }
 
 @Composable
-private fun VietQrPaymentDialog(
-    imageUrl: String,
-    onDismiss: () -> Unit,
-) {
+private fun VietQrCard(detail: InvoiceDetail) {
+    val imageUrl = remember(detail.id, detail.totalAmount) { buildVietQrQuickLinkUrl(detail) }
     val qrPngSaver = koinInject<QrPngSaver>()
     val scope = rememberCoroutineScope()
     var isSavingQr by remember { mutableStateOf(false) }
     var saveFeedback by remember { mutableStateOf<String?>(null) }
     var saveFeedbackIsError by remember { mutableStateOf(false) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        confirmButton = {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+    ) {
+        Column(
+            modifier = Modifier.padding(18.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                TextButton(
-                    onClick = {
-                        if (isSavingQr) return@TextButton
-                        scope.launch {
-                            isSavingQr = true
-                            saveFeedback = null
-                            qrPngSaver.savePngFromUrl(imageUrl).fold(
-                                onSuccess = {
-                                    saveFeedback = it
-                                    saveFeedbackIsError = false
-                                },
-                                onFailure = { e ->
-                                    saveFeedback = e.message ?: "Không lưu được ảnh"
-                                    saveFeedbackIsError = true
-                                },
-                            )
-                            isSavingQr = false
-                        }
-                    },
-                    enabled = !isSavingQr,
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color(0xFFE3F2FD),
                 ) {
-                    if (isSavingQr) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(18.dp),
-                            strokeWidth = 2.dp,
-                        )
-                    } else {
-                        Icon(Icons.Filled.Save, contentDescription = null, modifier = Modifier.size(18.dp))
-                    }
-                    Spacer(modifier = Modifier.size(6.dp))
-                    Text("Lưu mã QR")
+                    Icon(
+                        Icons.Filled.QrCode2,
+                        contentDescription = null,
+                        modifier = Modifier.padding(6.dp).size(22.dp),
+                        tint = Color(0xFF1976D2),
+                    )
                 }
-                Spacer(modifier = Modifier.width(8.dp))
-                TextButton(onClick = onDismiss, enabled = !isSavingQr) {
-                    Text("Đóng")
-                }
-            }
-        },
-        title = {
-            Text(
-                "Thanh toán qua VietQR",
-                style = MaterialTheme.typography.titleLarge,
-            )
-        },
-        text = {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-            ) {
-                AsyncImage(
-                    model = imageUrl,
-                    contentDescription = "Mã QR VietQR thanh toán",
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                saveFeedback?.let { msg ->
-                    Spacer(modifier = Modifier.height(10.dp))
+                Column {
                     Text(
-                        text = msg,
-                        color = if (saveFeedbackIsError) {
-                            MaterialTheme.colorScheme.error
-                        } else {
-                            MaterialTheme.colorScheme.primary
-                        },
+                        text = "Mã QR thanh toán",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = Color(0xFF212121),
+                    )
+                    Text(
+                        text = "Quét bằng ứng dụng ngân hàng bất kỳ",
                         style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFF757575),
                     )
                 }
             }
-        },
-    )
+
+            Spacer(modifier = Modifier.height(14.dp))
+
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp)),
+                color = Color(0xFFFAFAFA),
+                border = BorderStroke(1.dp, Color(0xFFE0E0E0)),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    AsyncImage(
+                        model = imageUrl,
+                        contentDescription = "Mã QR VietQR thanh toán",
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            OutlinedButton(
+                onClick = {
+                    if (isSavingQr) return@OutlinedButton
+                    scope.launch {
+                        isSavingQr = true
+                        saveFeedback = null
+                        qrPngSaver.savePngFromUrl(imageUrl).fold(
+                            onSuccess = {
+                                saveFeedback = it
+                                saveFeedbackIsError = false
+                            },
+                            onFailure = { e ->
+                                saveFeedback = e.message ?: "Không lưu được ảnh"
+                                saveFeedbackIsError = true
+                            },
+                        )
+                        isSavingQr = false
+                    }
+                },
+                enabled = !isSavingQr,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(44.dp),
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF1976D2)),
+                border = BorderStroke(1.dp, Color(0xFF1976D2)),
+            ) {
+                if (isSavingQr) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = Color(0xFF1976D2),
+                    )
+                } else {
+                    Icon(Icons.Filled.Save, contentDescription = null, modifier = Modifier.size(18.dp))
+                }
+                Spacer(modifier = Modifier.size(8.dp))
+                Text("Lưu mã QR về máy", style = MaterialTheme.typography.labelLarge)
+            }
+
+            saveFeedback?.let { msg ->
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = msg,
+                    color = if (saveFeedbackIsError) MaterialTheme.colorScheme.error else Color(0xFF2E7D32),
+                    style = MaterialTheme.typography.bodySmall,
+                    textAlign = TextAlign.Center,
+                )
+            }
+        }
+    }
 }
 
 @Composable
@@ -1020,8 +1047,9 @@ private fun PaymentDatesCard(d: InvoiceDetail) {
                     modifier = Modifier.weight(1f),
                     bg = Color(0xFFFFF3E0),
                     label = "Hạn thanh toán",
+                    value = d.dueDate(),
                     valueAccent = Color(0xFFE65100),
-                    subLabel = "7 ngày kể từ ngày phát hành hóa đơn"
+                    subLabel = "14 ngày kể từ ngày phát hành"
                 )
             }
         }
@@ -1102,7 +1130,7 @@ private fun UnpaidWarningCard(d: InvoiceDetail) {
 
 
 private fun InvoiceDetail.isPaid(): Boolean =
-    paymentStatusLabel.contains("đã thanh toán", ignoreCase = true)
+    paymentKind() == InvoicePaymentKind.Paid
 
 @Composable
 private fun ReplacementNoteCard() {

@@ -207,8 +207,6 @@ fun LoginScreen(
                     modifier = Modifier
                         .size(logoImg)
                         .shadow(elevation = if (imeVisible) 4.dp else 6.dp, shape = CircleShape)
-                        .background(Color.White, shape = CircleShape)
-                        .padding(3.dp)
                         .clip(CircleShape),
                     contentScale = ContentScale.Crop
                 )

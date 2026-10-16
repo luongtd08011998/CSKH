@@ -2,6 +2,7 @@ package com.example.cskh.presentation.screens.customer
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,21 +21,22 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Chat
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Policy
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Tag
 import androidx.compose.material.icons.filled.WaterDrop
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -47,21 +49,20 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.foundation.clickable
-import androidx.compose.material.icons.filled.Policy
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.cskh.domain.model.CustomerProfile
 import org.koin.compose.viewmodel.koinViewModel
 
@@ -148,9 +149,7 @@ fun CustomerProfileScreen(
                     profile = state.profile!!,
                     onBack = onBack,
                     isRefreshing = state.isLoading,
-                    onLogout = {
-                        showLogoutDialog = true
-                    },
+                    onLogout = { showLogoutDialog = true },
                 )
             }
 
@@ -193,7 +192,7 @@ private fun CustomerProfileScrollContent(
                     )
                 }
                 Text(
-                    "Thông tin cá nhân",
+                    "Tài khoản",
                     style = MaterialTheme.typography.titleLarge.copy(
                         fontWeight = FontWeight.SemiBold,
                         color = Color.White,
@@ -575,6 +574,8 @@ private fun AccountStatusTile(
     }
 }
 
+
+
 @Composable
 private fun LogoutButton(onLogout: () -> Unit) {
     androidx.compose.material3.OutlinedButton(
@@ -587,7 +588,7 @@ private fun LogoutButton(onLogout: () -> Unit) {
         border = BorderStroke(1.5.dp, Color(0xFFD32F2F)),
     ) {
         Icon(
-            imageVector = Icons.Filled.Logout,
+            imageVector = Icons.AutoMirrored.Filled.Logout,
             contentDescription = null,
             modifier = Modifier.size(18.dp),
         )

@@ -100,6 +100,62 @@ actual class InvoiceZipSaverImpl actual constructor() : InvoiceZipSaver {
         
         Result.success("Đã tải và mở hóa đơn PDF.")
     }
+
+    override suspend fun saveAndOpenDocumentPdf(filename: String, bytes: ByteArray): Result<String> = withContext(Dispatchers.Default) {
+        var finalPdfPath: String? = null
+        try {
+            val fm = NSFileManager.defaultManager
+            val cacheUrl = fm.URLsForDirectory(
+                directory = platform.Foundation.NSCachesDirectory,
+                inDomains = NSUserDomainMask,
+            ).firstOrNull() as? NSURL
+                ?: return@withContext Result.failure(Exception("Không tìm được thư mục Cache"))
+            val cacheBase = cacheUrl.path
+                ?: return@withContext Result.failure(Exception("Đường dẫn Cache không hợp lệ"))
+            val cacheDir = "$cacheBase/cust_documents"
+            if (!fm.fileExistsAtPath(cacheDir)) {
+                fm.createDirectoryAtPath(cacheDir, withIntermediateDirectories = true, attributes = null, error = null)
+            }
+
+            val safeName = filename.ifBlank { "document.pdf" }
+            finalPdfPath = "$cacheDir/$safeName"
+            writeBytesToPath(finalPdfPath, bytes)
+        } catch (e: Throwable) {
+            return@withContext Result.failure(e)
+        }
+
+        withContext(Dispatchers.Main) {
+            platform.Foundation.NSNotificationCenter.defaultCenter.postNotificationName(
+                aName = "CskhPresentDocumentViewer",
+                `object` = null,
+                userInfo = mapOf<Any?, Any?>("filePath" to finalPdfPath),
+            )
+        }
+
+        Result.success("Đã mở tài liệu.")
+    }
+
+    override suspend fun saveDocumentPdf(filename: String, bytes: ByteArray): Result<String> = withContext(Dispatchers.Default) {
+        runCatching {
+            val fm = NSFileManager.defaultManager
+            val cacheUrl = fm.URLsForDirectory(
+                directory = platform.Foundation.NSCachesDirectory,
+                inDomains = NSUserDomainMask,
+            ).firstOrNull() as? NSURL
+                ?: throw Exception("Không tìm được thư mục Cache")
+            val cacheBase = cacheUrl.path
+                ?: throw Exception("Đường dẫn Cache không hợp lệ")
+            val cacheDir = "$cacheBase/cust_documents"
+            if (!fm.fileExistsAtPath(cacheDir)) {
+                fm.createDirectoryAtPath(cacheDir, withIntermediateDirectories = true, attributes = null, error = null)
+            }
+
+            val safeName = filename.ifBlank { "document.pdf" }
+            val finalPdfPath = "$cacheDir/$safeName"
+            writeBytesToPath(finalPdfPath, bytes)
+            finalPdfPath
+        }
+    }
 }
 
 

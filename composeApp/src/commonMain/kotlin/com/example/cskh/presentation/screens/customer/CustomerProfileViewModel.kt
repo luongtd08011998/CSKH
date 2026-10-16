@@ -95,3 +95,4 @@ class CustomerProfileViewModel(
         result.exceptionOrNull()?.message?.contains("401") == true ||
             result.exceptionOrNull()?.message?.contains("Chưa đăng nhập") == true
 }
+

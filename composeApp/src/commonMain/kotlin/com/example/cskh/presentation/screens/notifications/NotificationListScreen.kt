@@ -427,7 +427,7 @@ private fun MaintenanceTabContent(
                         StaggeredListItem(index = index) {
                             MaintenanceCard(
                                 article = article,
-                                onClick = { onArticleClick("https://beta.toctienltd.vn/news/${article.slug}") }
+                                onClick = { onArticleClick("https://toctienltd.vn/news/${article.slug}") }
                             )
                         }
                     }
@@ -519,7 +519,7 @@ private fun FeaturedTabContent(
                         StaggeredListItem(index = index) {
                             MaintenanceCard(
                                 article = article,
-                                onClick = { onArticleClick("https://beta.toctienltd.vn/news/${article.slug}") }
+                                onClick = { onArticleClick("https://toctienltd.vn/news/${article.slug}") }
                             )
                         }
                     }

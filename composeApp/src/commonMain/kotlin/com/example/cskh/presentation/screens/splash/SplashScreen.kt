@@ -78,9 +78,9 @@ fun SplashScreen(onFinished: () -> Unit) {
         ) {
             // Logo công ty
             Surface(
-                modifier = Modifier.size(120.dp),
+                modifier = Modifier.size(124.dp),
                 shape = CircleShape,
-                color = Color.White,
+                color = Color.Transparent,
                 shadowElevation = 12.dp,
                 tonalElevation = 4.dp,
             ) {
@@ -89,7 +89,6 @@ fun SplashScreen(onFinished: () -> Unit) {
                     contentDescription = "Logo công ty",
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(8.dp)
                         .clip(CircleShape),
                     contentScale = ContentScale.Crop,
                 )

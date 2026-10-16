@@ -62,6 +62,7 @@ import com.example.cskh.domain.repository.AppConfigRepository
 import com.example.cskh.domain.preferences.UserFormStore
 import com.example.cskh.presentation.NotificationBadgeStore
 import com.example.cskh.presentation.navigation.Screen
+import com.example.cskh.presentation.screens.customer.CustomerDocumentsScreen
 import com.example.cskh.presentation.screens.customer.CustomerProfileScreen
 import com.example.cskh.presentation.screens.home.HomeScreen
 import com.example.cskh.presentation.screens.invoices.InvoiceDetailScreen
@@ -345,6 +346,7 @@ private fun MainNavHost(
                         },
                         onNavigateNotifications = { navController.navigate(Screen.Notifications()) },
                         onNavigateCustomerProfile = { navController.navigate(Screen.CustomerProfile) },
+                        onNavigateCustomerDocuments = { navController.navigate(Screen.CustomerDocuments) },
                         onNavigateWaterPrice = { navController.navigate(Screen.WaterPrice) },
                         onNavigateAbout = { navController.navigate(Screen.About) },
                         onNavigateOther = { navController.navigate(Screen.Other) },
@@ -419,6 +421,11 @@ private fun MainNavHost(
                     CustomerProfileScreen(
                         onBack = { navController.popBackStack() },
                         onLogout = onLogout,
+                    )
+                }
+                composable<Screen.CustomerDocuments> {
+                    CustomerDocumentsScreen(
+                        onBack = { navController.popBackStack() },
                     )
                 }
                 composable<Screen.WaterPrice> {

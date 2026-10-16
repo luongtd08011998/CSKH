@@ -21,8 +21,10 @@
         <domain includeSubdomains="false">10.0.2.2</domain>
         <!-- Genymotion emulator -> host machine -->
         <domain includeSubdomains="false">10.0.3.2</domain>
+        <domain includeSubdomains="true">toctienltd.vn</domain>
         <trust-anchors>
             <certificates src="system" />
+            <certificates src="@raw/sectigo_intermediate" />
         </trust-anchors>
     </domain-config>
 </network-security-config>

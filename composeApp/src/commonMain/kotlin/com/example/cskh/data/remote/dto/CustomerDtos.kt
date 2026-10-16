@@ -1,6 +1,7 @@
 package com.example.cskh.data.remote.dto
 
 import com.example.cskh.domain.model.CustomerProfile
+import com.example.cskh.domain.model.CustomerDocument
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -33,4 +34,19 @@ fun CustomerMeDataDto.toDomain(): CustomerProfile = CustomerProfile(
     taxCode = taxCode.orEmpty(),
     isActive = isActive,
     isWaterCut = isWaterCut,
+)
+
+@Serializable
+data class DocumentDto(
+    val filename: String = "",
+    val fullname: String = "",
+    val url: String = "",
+    val filesize: Long = 0L,
+)
+
+fun DocumentDto.toDomain(): CustomerDocument = CustomerDocument(
+    filename = filename,
+    fullname = fullname,
+    url = url,
+    filesize = filesize,
 )

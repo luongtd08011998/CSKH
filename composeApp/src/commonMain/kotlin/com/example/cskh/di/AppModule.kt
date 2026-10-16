@@ -26,9 +26,11 @@ import com.example.cskh.domain.repository.AppConfigRepository
 import com.example.cskh.domain.repository.RegisterRepository
 import com.example.cskh.domain.repository.MaintenanceArticleRepository
 import com.example.cskh.domain.repository.FeaturedArticleRepository
-import com.example.cskh.domain.usecase.DownloadEInvoicePdfUseCase
 import com.example.cskh.domain.usecase.CreateFeedbackUseCase
+import com.example.cskh.domain.usecase.DownloadCustomerDocUseCase
+import com.example.cskh.domain.usecase.DownloadEInvoicePdfUseCase
 
+import com.example.cskh.domain.usecase.GetCustomerDocListUseCase
 import com.example.cskh.domain.usecase.GetCustomerMeUseCase
 import com.example.cskh.domain.usecase.GetFeedbackDetailUseCase
 import com.example.cskh.domain.usecase.GetFeedbacksUseCase
@@ -53,6 +55,7 @@ import com.example.cskh.platform.QrPngSaver
 import com.example.cskh.platform.QrPngSaverImpl
 import com.example.cskh.platform.createAppIconBadge
 import com.example.cskh.platform.createBinaryGetDownloader
+import com.example.cskh.presentation.screens.customer.CustomerDocumentsViewModel
 import com.example.cskh.presentation.screens.customer.CustomerProfileViewModel
 import com.example.cskh.presentation.screens.home.HomeViewModel
 import com.example.cskh.presentation.screens.invoices.InvoiceDetailViewModel
@@ -103,6 +106,8 @@ val appModule = module {
     single<QrPngSaver> { QrPngSaverImpl() }
     single { DownloadEInvoicePdfUseCase(get()) }
     single { GetCustomerMeUseCase(get()) }
+    single { GetCustomerDocListUseCase(get()) }
+    single { DownloadCustomerDocUseCase(get()) }
     single<AuthRepository> { AuthRepositoryImpl(get(), get()) }
     single<InvoiceRepository> { InvoiceRepositoryImpl(get(), get(), get()) }
     single<CustomerRepository> { CustomerRepositoryImpl(get(), get()) }
@@ -130,6 +135,7 @@ val appModule = module {
     viewModel { InvoiceListViewModel(get(), get(), get()) }
     viewModel { NotificationListViewModel(get(), get(), get(), get(), get(), get(), get(), get()) }
     viewModel { CustomerProfileViewModel(get(), get(), get(), get()) }
+    viewModel { CustomerDocumentsViewModel(get(), get(), get(), get(), get(), get()) }
     viewModel { PhanAnhViewModel(get(), get(), get()) }
     viewModel { RegisterViewModel(get()) }
     viewModel { PhanAnhListViewModel(get()) }

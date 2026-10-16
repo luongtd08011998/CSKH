@@ -71,6 +71,42 @@ actual class InvoiceZipSaverImpl actual constructor() : InvoiceZipSaver {
             }
         }
     }
+
+    override suspend fun saveAndOpenDocumentPdf(filename: String, bytes: ByteArray): Result<String> = withContext(Dispatchers.IO) {
+        runCatching {
+            val ctx = AndroidApplicationHolder.application
+            val cacheDir = File(ctx.cacheDir, "cust_documents")
+            cacheDir.mkdirs()
+            val safeName = filename.ifBlank { "document.pdf" }
+            val pdfFile = File(cacheDir, safeName)
+            FileOutputStream(pdfFile).use { it.write(bytes) }
+
+            val intent = android.content.Intent(ctx, WebViewActivity::class.java).apply {
+                putExtra(WebViewActivity.EXTRA_HTML_FILE_PATH, pdfFile.absolutePath)
+                putExtra(WebViewActivity.EXTRA_TITLE, safeName)
+                flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+
+            try {
+                ctx.startActivity(intent)
+                "Đã mở tài liệu."
+            } catch (e: Exception) {
+                error("Không thể mở tài liệu: ${e.message}")
+            }
+        }
+    }
+
+    override suspend fun saveDocumentPdf(filename: String, bytes: ByteArray): Result<String> = withContext(Dispatchers.IO) {
+        runCatching {
+            val ctx = AndroidApplicationHolder.application
+            val cacheDir = File(ctx.cacheDir, "cust_documents")
+            cacheDir.mkdirs()
+            val safeName = filename.ifBlank { "document.pdf" }
+            val pdfFile = File(cacheDir, safeName)
+            FileOutputStream(pdfFile).use { it.write(bytes) }
+            pdfFile.absolutePath
+        }
+    }
 }
 
 private fun getDisplayNameFromUri(ctx: Context, uri: Uri): String? {
