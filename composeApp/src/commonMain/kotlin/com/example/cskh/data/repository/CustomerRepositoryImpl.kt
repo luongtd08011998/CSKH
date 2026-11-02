@@ -44,7 +44,7 @@ class CustomerRepositoryImpl(
         val response = client.get(url)
         if (response.status.value !in 200..299) {
             val text = runCatching { response.bodyAsText() }.getOrNull()
-            error(text ?: "HTTP ${response.status.value}")
+            error(formatServerError(response.status.value, text))
         }
         val dtos = response.body<List<DocumentDto>>()
         dtos.map { it.toDomain() }
@@ -56,10 +56,18 @@ class CustomerRepositoryImpl(
         }
         if (response.status.value !in 200..299) {
             val text = runCatching { response.bodyAsText() }.getOrNull()
-            error(text?.takeIf { it.isNotBlank() } ?: "HTTP ${response.status.value}")
+            error(formatServerError(response.status.value, text))
         }
         val bytes = response.body<ByteArray>()
         if (bytes.isEmpty()) error("Dữ liệu tệp trống")
         bytes
+    }
+
+    private fun formatServerError(statusCode: Int, bodyText: String?): String {
+        val trimmed = bodyText?.trim().orEmpty()
+        if (trimmed.isEmpty() || trimmed.startsWith("<!DOCTYPE", ignoreCase = true) || trimmed.startsWith("<html", ignoreCase = true)) {
+            return "Không thể tải hồ sơ khách hàng từ máy chủ (HTTP $statusCode)."
+        }
+        return trimmed
     }
 }

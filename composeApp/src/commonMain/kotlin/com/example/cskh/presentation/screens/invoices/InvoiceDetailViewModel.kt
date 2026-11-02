@@ -9,6 +9,7 @@ import com.example.cskh.domain.usecase.DownloadEInvoicePdfUseCase
 import com.example.cskh.domain.usecase.GetEInvoiceViewUseCase
 import com.example.cskh.domain.usecase.GetInvoiceDetailUseCase
 import com.example.cskh.domain.usecase.UserFormPreferencesUseCase
+import com.example.cskh.util.mapApiErrorToVietnamese
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -66,7 +67,7 @@ class InvoiceDetailViewModel(
                 } else {
                     _state.update {
                         it.copy(
-                            errorMessage = retry.exceptionOrNull()?.message ?: "Lỗi tải chi tiết hóa đơn",
+                            errorMessage = mapApiErrorToVietnamese(retry.exceptionOrNull()?.message ?: "Lỗi tải chi tiết hóa đơn"),
                             isLoading = false,
                         )
                     }
@@ -79,7 +80,7 @@ class InvoiceDetailViewModel(
             } else {
                 _state.update {
                     it.copy(
-                        errorMessage = result.exceptionOrNull()?.message ?: "Lỗi không xác định",
+                        errorMessage = mapApiErrorToVietnamese(result.exceptionOrNull()?.message ?: "Lỗi không xác định"),
                         isLoading = false,
                     )
                 }

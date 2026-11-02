@@ -9,6 +9,7 @@ import com.example.cskh.domain.model.PageMeta
 import com.example.cskh.domain.model.ProcessedInvoice
 import com.example.cskh.domain.usecase.GetInvoicesUseCase
 import com.example.cskh.domain.usecase.UserFormPreferencesUseCase
+import com.example.cskh.util.mapApiErrorToVietnamese
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -122,7 +123,7 @@ class InvoiceListViewModel(
                         it.copy(
                             isLoading = false,
                             isLoadingMore = false,
-                            errorMessage = e.message ?: "Không tải được danh sách",
+                            errorMessage = mapApiErrorToVietnamese(e.message),
                         )
                     }
                 },

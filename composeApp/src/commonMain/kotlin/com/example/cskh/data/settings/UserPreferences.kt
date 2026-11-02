@@ -7,7 +7,8 @@ class UserPreferences(private val settings: Settings) : UserFormStore {
 
     override fun loadDigiCode(): String = settings.getString(KEY_DIGI, "")
     override fun loadPhone(): String = settings.getString(KEY_PHONE, "")
-    override fun loadBaseUrl(): String = settings.getString(KEY_BASE, "")
+    override fun loadBaseUrl(): String =
+        settings.getString(KEY_BASE, "").replace("://beta.toctienltd.vn", "://toctienltd.vn")
 
     override fun loadAccessToken(): String = settings.getString(KEY_ACCESS, "")
     override fun loadRefreshToken(): String = settings.getString(KEY_REFRESH, "")

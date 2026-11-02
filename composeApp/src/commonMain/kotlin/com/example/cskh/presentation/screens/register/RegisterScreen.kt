@@ -63,7 +63,7 @@ private val fieldBorder = Color(0xFFE0E0E0)
 private val buttonGradient = Brush.horizontalGradient(
     colors = listOf(Color(0xFF42A5F5), Color(0xFF1E88E5)),
 )
-private const val TEMPLATE_URL = "https://beta.toctienltd.vn/2026_Giay_de_nghi_lap_dat_dong_ho_toctienltd.doc"
+private const val TEMPLATE_URL = "https://toctienltd.vn/2026_Giay_de_nghi_lap_dat_dong_ho_toctienltd.doc"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

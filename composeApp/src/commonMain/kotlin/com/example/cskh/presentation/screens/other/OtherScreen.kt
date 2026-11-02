@@ -85,7 +85,7 @@ fun OtherScreen(
             icon = Icons.Filled.WaterDrop,
             iconBackground = Color(0xFFE0F2FE), // sky-100
             iconTint = Color(0xFF0284C7),        // sky-600
-            onClick = { uriHandler.openUri("https://beta.toctienltd.vn/category/xet-nghiem-nuoc") },
+            onClick = { uriHandler.openUri("https://toctienltd.vn/category/xet-nghiem-nuoc") },
         ),
         // Hàng 2
         OtherMenuItem(
