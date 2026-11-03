@@ -95,12 +95,15 @@ class InvoiceListViewModel(
             // Xử lý Unauthorized (401)
             if (isUnauthorized(result)) {
                 if (!tokenRefresh.tryRefresh()) {
-                    _state.update { it.copy(isLoading = false, isLoadingMore = false, sessionExpired = true) }
+                    if (tokenRefresh.isSessionCleared) {
+                        _state.update { it.copy(isLoading = false, isLoadingMore = false, sessionExpired = true) }
+                        return@launch
+                    }
+                } else {
+                    // Thử lại sau khi refresh thành công
+                    loadPage(page, append)
                     return@launch
                 }
-                // Thử lại sau khi refresh thành công
-                loadPage(page, append)
-                return@launch
             }
 
             result.fold(

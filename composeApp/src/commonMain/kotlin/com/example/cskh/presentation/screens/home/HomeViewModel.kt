@@ -50,13 +50,30 @@ class HomeViewModel(
     /** Job theo dõi slow-connection, cancel khi data về kịp */
     private var slowConnectionJob: Job? = null
 
+    /** Job tự động thử kết nối lại khi BE đang tắt / khởi động lại */
+    private var autoRetryJob: Job? = null
+    private var refreshJob: Job? = null
+
     companion object {
         /** Ngưỡng thời gian (ms) trước khi hiện cảnh báo kết nối chậm */
         private const val SLOW_CONNECTION_THRESHOLD_MS = 5_000L
+        /** Chu kỳ tự động thử kết nối lại (ms) khi chưa tải được dữ liệu */
+        private const val AUTO_RETRY_INTERVAL_MS = 5_000L
     }
 
     init {
         refresh()
+    }
+
+    /**
+     * Gọi khi người dùng quay lại màn hình Home hoặc mở lại app từ nền.
+     * Nếu dữ liệu đang trống hoặc lần trước bị lỗi kết nối thì tự động làm mới ngay.
+     */
+    fun refreshIfNeeded() {
+        val s = _state.value
+        if (!s.isLoading && (s.customer == null || s.errorMessage != null)) {
+            refresh()
+        }
     }
 
     /**
@@ -79,6 +96,9 @@ class HomeViewModel(
             return
         }
 
+        autoRetryJob?.cancel()
+        refreshJob?.cancel()
+
         // Bắt đầu đếm thời gian kết nối chậm
         slowConnectionJob?.cancel()
         slowConnectionJob = viewModelScope.launch {
@@ -86,7 +106,7 @@ class HomeViewModel(
             _state.update { it.copy(isSlowConnection = true) }
         }
 
-        viewModelScope.launch {
+        refreshJob = viewModelScope.launch {
             _state.update { it.copy(isLoading = true, errorMessage = null) }
 
             val meResult = getCustomerMe(baseUrl)
@@ -94,7 +114,18 @@ class HomeViewModel(
             if (isUnauthorized(meResult)) {
                 slowConnectionJob?.cancel()
                 if (!tokenRefresh.tryRefresh()) {
-                    _state.update { it.copy(isLoading = false, sessionExpired = true, isSlowConnection = false) }
+                    if (tokenRefresh.isSessionCleared) {
+                        _state.update { it.copy(isLoading = false, sessionExpired = true, isSlowConnection = false) }
+                    } else {
+                        _state.update {
+                            it.copy(
+                                isLoading = false,
+                                isSlowConnection = false,
+                                errorMessage = "Không thể kết nối máy chủ",
+                            )
+                        }
+                        scheduleAutoRetry()
+                    }
                     return@launch
                 }
                 // Retry sau khi refresh thành công
@@ -117,6 +148,10 @@ class HomeViewModel(
             // Data đã về → hủy timeout slow-connection
             slowConnectionJob?.cancel()
 
+            val errMsg = (meResult.exceptionOrNull()
+                ?: invoicesResult.exceptionOrNull()
+                ?: detailResult.exceptionOrNull())?.message
+
             _state.update {
                 it.copy(
                     customer = me,
@@ -124,12 +159,25 @@ class HomeViewModel(
                     recentInvoices = displayable.map { p -> p.invoice },
                     isLoading = false,
                     isSlowConnection = false,
-                    errorMessage = (meResult.exceptionOrNull()
-                        ?: invoicesResult.exceptionOrNull()
-                        ?: detailResult.exceptionOrNull())?.message,
+                    errorMessage = errMsg,
                 )
             }
-            notificationBadgeStore.refreshFromNetwork()
+
+            if (me == null || errMsg != null) {
+                scheduleAutoRetry()
+            } else {
+                notificationBadgeStore.refreshFromNetwork()
+            }
+        }
+    }
+
+    private fun scheduleAutoRetry() {
+        autoRetryJob?.cancel()
+        autoRetryJob = viewModelScope.launch {
+            delay(AUTO_RETRY_INTERVAL_MS)
+            if (!_state.value.isLoading && (_state.value.customer == null || _state.value.errorMessage != null)) {
+                refresh()
+            }
         }
     }
 

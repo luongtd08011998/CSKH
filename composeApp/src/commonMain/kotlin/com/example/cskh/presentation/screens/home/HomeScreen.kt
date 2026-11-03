@@ -64,6 +64,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -71,9 +72,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import kotlinx.coroutines.launch
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.runtime.setValue
@@ -146,6 +150,7 @@ private data class HomeServiceCard(
     val onClick: () -> Unit,
 )
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     onNavigateInvoices: () -> Unit,
@@ -164,6 +169,10 @@ fun HomeScreen(
     val state by viewModel.state.collectAsState()
     val notificationBadgeStore = koinInject<NotificationBadgeStore>()
     val feedbackUnreadCount by notificationBadgeStore.feedbackUnreadCount.collectAsState()
+
+    LaunchedEffect(Unit) {
+        viewModel.refreshIfNeeded()
+    }
 
     // Khi refresh token hết hạn → hiển thị thông báo
     if (state.sessionExpired) {
@@ -223,7 +232,9 @@ fun HomeScreen(
 
     val showSkeleton = state.isLoading && state.customer == null
 
-    Column(
+    PullToRefreshBox(
+        isRefreshing = state.isLoading && state.customer != null,
+        onRefresh = { viewModel.retry() },
         modifier = Modifier
             .fillMaxSize()
             .background(pageBackground),
@@ -344,6 +355,7 @@ fun HomeScreen(
             DataLoadingStatusBar(
                 isLoading = state.isLoading,
                 isSlowConnection = state.isSlowConnection,
+                hasError = state.errorMessage != null,
                 onRetry = { viewModel.retry() },
                 modifier = Modifier.padding(bottom = 8.dp),
             )
@@ -592,141 +604,244 @@ private fun CurrentInvoiceCard(
         val qrPngSaver = koinInject<com.example.cskh.platform.QrPngSaver>()
         val qrScope = androidx.compose.runtime.rememberCoroutineScope()
         var isSaving by remember { mutableStateOf(false) }
-        var saveMsg by remember { mutableStateOf<String?>(null) }
-        var saveMsgIsError by remember { mutableStateOf(false) }
+        var isSavedSuccess by remember { mutableStateOf(false) }
+        var showSuccessToastOverlay by remember { mutableStateOf(false) }
+        var saveErrorMsg by remember { mutableStateOf<String?>(null) }
         Dialog(
             onDismissRequest = { showQr = false },
             properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
         ) {
-            Surface(
+            Box(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-                shape = RoundedCornerShape(28.dp),
-                color = Color.White,
-                shadowElevation = 12.dp,
+                contentAlignment = Alignment.Center,
             ) {
-                Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
-                    // Header gradient
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(heroGradient)
-                            .padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 52.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(
-                                "Quét mã để thanh toán",
-                                style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
-                                color = Color.White.copy(alpha = 0.85f),
-                            )
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                text = (invoice?.totalAmount ?: detail.totalAmount)?.formatVnd().orEmpty(),
-                                style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold),
-                                color = Color.White,
-                            )
-                            if (monthText.isNotBlank()) {
-                                Spacer(Modifier.height(8.dp))
-                                Surface(shape = CircleShape, color = Color.White.copy(alpha = 0.18f)) {
-                                    Text(
-                                        "Hóa đơn tháng $monthText",
-                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                                        color = Color.White,
-                                    )
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(28.dp),
+                    color = Color.White,
+                    shadowElevation = 12.dp,
+                ) {
+                    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
+                        // Header gradient
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(heroGradient)
+                                .padding(start = 20.dp, end = 20.dp, top = 22.dp, bottom = 52.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(
+                                    "Quét mã để thanh toán",
+                                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.Medium),
+                                    color = Color.White.copy(alpha = 0.85f),
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    text = (invoice?.totalAmount ?: detail.totalAmount)?.formatVnd().orEmpty(),
+                                    style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.ExtraBold),
+                                    color = Color.White,
+                                )
+                                if (monthText.isNotBlank()) {
+                                    Spacer(Modifier.height(8.dp))
+                                    Surface(shape = CircleShape, color = Color.White.copy(alpha = 0.18f)) {
+                                        Text(
+                                            "Hóa đơn tháng $monthText",
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                                            color = Color.White,
+                                        )
+                                    }
                                 }
                             }
                         }
-                    }
 
-                    // QR card overlaps header
-                    Surface(
-                        modifier = Modifier
-                            .padding(horizontal = 20.dp)
-                            .offset(y = (-34).dp)
-                            .fillMaxWidth(),
-                        shape = RoundedCornerShape(20.dp),
-                        color = Color.White,
-                        border = BorderStroke(1.dp, Color(0xFFE3EAF3)),
-                        shadowElevation = 6.dp,
-                    ) {
-                        AsyncImage(
-                            model = qrUrl,
-                            contentDescription = "Mã QR VietQR thanh toán",
-                            modifier = Modifier.fillMaxWidth().padding(10.dp),
-                        )
-                    }
-
-                    Column(
-                        modifier = Modifier
-                            .padding(horizontal = 20.dp)
-                            .offset(y = (-22).dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Text(
-                            "Mở ứng dụng ngân hàng và quét mã",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color(0xFF78909C),
-                            textAlign = TextAlign.Center,
-                        )
-                        saveMsg?.let { msg ->
-                            Spacer(Modifier.height(6.dp))
-                            Text(
-                                msg,
-                                style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
-                                color = if (saveMsgIsError) Color(0xFFC62828) else Color(0xFF2E7D32),
-                                textAlign = TextAlign.Center,
+                        // QR card overlaps header
+                        Surface(
+                            modifier = Modifier
+                                .padding(horizontal = 20.dp)
+                                .offset(y = (-34).dp)
+                                .fillMaxWidth(),
+                            shape = RoundedCornerShape(20.dp),
+                            color = Color.White,
+                            border = BorderStroke(1.dp, Color(0xFFE3EAF3)),
+                            shadowElevation = 6.dp,
+                        ) {
+                            AsyncImage(
+                                model = qrUrl,
+                                contentDescription = "Mã QR VietQR thanh toán",
+                                modifier = Modifier.fillMaxWidth().padding(10.dp),
                             )
                         }
-                        Spacer(Modifier.height(14.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
+
+                        Column(
+                            modifier = Modifier
+                                .padding(horizontal = 20.dp)
+                                .offset(y = (-22).dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
                         ) {
-                            Button(
-                                onClick = { showQr = false },
-                                modifier = Modifier.weight(1f).height(48.dp),
-                                contentPadding = PaddingValues(horizontal = 8.dp),
-                                shape = CircleShape,
-                                elevation = null,
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFFF1F4F8),
-                                    contentColor = Color(0xFF455A64),
-                                ),
-                            ) {
-                                Icon(Icons.Filled.Close, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(Modifier.width(4.dp))
-                                Text("Đóng", maxLines = 1, fontWeight = FontWeight.SemiBold)
-                            }
-                            Button(
-                                onClick = {
-                                    if (isSaving) return@Button
-                                    qrScope.launch {
-                                        isSaving = true
-                                        saveMsg = null
-                                        qrPngSaver.savePngFromUrl(qrUrl).fold(
-                                            onSuccess = { saveMsg = it; saveMsgIsError = false },
-                                            onFailure = { e -> saveMsg = e.message ?: "Không lưu được ảnh"; saveMsgIsError = true },
+                            Text(
+                                "Mở ứng dụng ngân hàng và quét mã",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color(0xFF78909C),
+                                textAlign = TextAlign.Center,
+                            )
+                            if (isSavedSuccess) {
+                                Spacer(Modifier.height(8.dp))
+                                Surface(
+                                    shape = CircleShape,
+                                    color = Color(0xFFECFDF5),
+                                    border = BorderStroke(1.dp, Color(0xFFA7F3D0)),
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                    ) {
+                                        Icon(
+                                            Icons.Filled.CheckCircle,
+                                            contentDescription = null,
+                                            tint = Color(0xFF10B981),
+                                            modifier = Modifier.size(18.dp),
                                         )
-                                        isSaving = false
+                                        Text(
+                                            "Đã lưu ảnh QR vào máy",
+                                            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.SemiBold),
+                                            color = Color(0xFF065F46),
+                                        )
                                     }
-                                },
-                                enabled = !isSaving,
-                                modifier = Modifier.weight(1.5f).height(48.dp),
-                                contentPadding = PaddingValues(horizontal = 8.dp),
-                                shape = CircleShape,
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF1565C0),
-                                    contentColor = Color.White,
-                                ),
-                            ) {
-                                Icon(Icons.Filled.Save, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Spacer(Modifier.width(6.dp))
-                                Text(if (isSaving) "Đang tải..." else "Tải về máy", maxLines = 1, fontWeight = FontWeight.Bold)
+                                }
                             }
+                            saveErrorMsg?.let { msg ->
+                                Spacer(Modifier.height(6.dp))
+                                Text(
+                                    msg,
+                                    style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium),
+                                    color = Color(0xFFC62828),
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
+                            Spacer(Modifier.height(14.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Button(
+                                    onClick = { showQr = false },
+                                    modifier = Modifier.weight(1f).height(48.dp),
+                                    contentPadding = PaddingValues(horizontal = 8.dp),
+                                    shape = CircleShape,
+                                    elevation = null,
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = Color(0xFFF1F4F8),
+                                        contentColor = Color(0xFF455A64),
+                                    ),
+                                ) {
+                                    Icon(Icons.Filled.Close, contentDescription = null, modifier = Modifier.size(18.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Đóng", maxLines = 1, fontWeight = FontWeight.SemiBold)
+                                }
+                                Button(
+                                    onClick = {
+                                        if (isSaving) return@Button
+                                        qrScope.launch {
+                                            isSaving = true
+                                            saveErrorMsg = null
+                                            qrPngSaver.savePngFromUrl(qrUrl).fold(
+                                                onSuccess = {
+                                                    isSavedSuccess = true
+                                                    showSuccessToastOverlay = true
+                                                    isSaving = false
+                                                    delay(1800)
+                                                    showSuccessToastOverlay = false
+                                                },
+                                                onFailure = { e ->
+                                                    saveErrorMsg = e.message ?: "Không lưu được ảnh"
+                                                    isSaving = false
+                                                },
+                                            )
+                                        }
+                                    },
+                                    enabled = !isSaving,
+                                    modifier = Modifier.weight(1.5f).height(48.dp),
+                                    contentPadding = PaddingValues(horizontal = 8.dp),
+                                    shape = CircleShape,
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = if (isSavedSuccess) Color(0xFF10B981) else Color(0xFF1565C0),
+                                        contentColor = Color.White,
+                                    ),
+                                ) {
+                                    Icon(
+                                        if (isSavedSuccess) Icons.Filled.Check else Icons.Filled.Save,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                    Spacer(Modifier.width(6.dp))
+                                    Text(
+                                        when {
+                                            isSaving -> "Đang lưu..."
+                                            isSavedSuccess -> "Đã lưu mã QR"
+                                            else -> "Tải về máy"
+                                        },
+                                        maxLines = 1,
+                                        fontWeight = FontWeight.Bold,
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.height(4.dp))
                         }
-                        Spacer(Modifier.height(4.dp))
+                    }
+                }
+
+                // Popup tích xanh kiểu VietinBank khi lưu thành công
+                androidx.compose.animation.AnimatedVisibility(
+                    visible = showSuccessToastOverlay,
+                    enter = fadeIn(tween(200)) + androidx.compose.animation.scaleIn(initialScale = 0.8f, animationSpec = tween(220)),
+                    exit = fadeOut(tween(250)),
+                ) {
+                    Surface(
+                        shape = RoundedCornerShape(22.dp),
+                        color = Color(0xF2111827),
+                        shadowElevation = 16.dp,
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(horizontal = 28.dp, vertical = 22.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(64.dp)
+                                    .background(Color(0xFF10B981).copy(alpha = 0.22f), CircleShape),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(46.dp)
+                                        .background(Color(0xFF10B981), CircleShape),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    Icon(
+                                        Icons.Filled.Check,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(28.dp),
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.height(12.dp))
+                            Text(
+                                "Lưu ảnh thành công",
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                                color = Color.White,
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                "Mã QR đã được lưu vào máy",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Color.White.copy(alpha = 0.8f),
+                            )
+                        }
                     }
                 }
             }

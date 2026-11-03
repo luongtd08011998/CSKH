@@ -27,8 +27,11 @@ class TokenRefreshCoordinator(
 ) {
     private val mutex = Mutex()
 
+    val isSessionCleared: Boolean
+        get() = sessionManager.refreshToken.isNullOrBlank()
+
     /**
-     * @return true nếu refresh thành công, false nếu cần điều hướng về Login.
+     * @return true nếu refresh thành công, false nếu thất bại.
      */
     suspend fun tryRefresh(): Boolean = mutex.withLock {
         val baseUrl = formPreferences.getBaseUrl()
@@ -42,9 +45,13 @@ class TokenRefreshCoordinator(
                 formPreferences.saveRefreshToken(sameRefresh)
                 true
             },
-            onFailure = {
-                // Refresh hết hạn hoặc lỗi → xóa session local
-                clearLocalSession()
+            onFailure = { e ->
+                // Chỉ xóa session local khi refresh token thực sự hết hạn (401).
+                // Nếu lỗi do BE đang tắt/khởi động lại hoặc mất mạng thì giữ nguyên token.
+                val msg = e.message.orEmpty()
+                if (msg.contains("REFRESH_EXPIRED") || msg.contains("401")) {
+                    clearLocalSession()
+                }
                 false
             },
         )

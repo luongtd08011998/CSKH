@@ -26,6 +26,8 @@ class WebViewActivity : ComponentActivity() {
 
     private lateinit var webView: WebView
     private var htmlFilePath: String = ""
+    private var saveBtnView: TextView? = null
+    private var successPopupView: View? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,7 +52,9 @@ class WebViewActivity : ComponentActivity() {
 
         val dp = resources.displayMetrics.density
 
-        // ── Root ────────────────────────────────────────────────────────────────
+        // ── Root container (FrameLayout để hiển thị popup tích xanh ở giữa) ──
+        val rootContainer = FrameLayout(this)
+
         val root = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setBackgroundColor(Color.parseColor("#F5F7FA"))
@@ -119,6 +123,7 @@ class WebViewActivity : ComponentActivity() {
                 elevation = 4 * dp
                 setOnClickListener { saveToDownloads() }
             }
+            saveBtnView = saveBtn
             
             bottomBar.addView(
                 backBtnBottom,
@@ -138,7 +143,153 @@ class WebViewActivity : ComponentActivity() {
             )
         }
 
-        setContentView(root)
+        rootContainer.addView(
+            root,
+            FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT),
+        )
+
+        val isDoc = htmlFilePath.contains("cust_documents") || !htmlFilePath.contains("hoadon")
+        val popup = createSuccessPopupView(isDoc, dp)
+        successPopupView = popup
+        rootContainer.addView(
+            popup,
+            FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT).apply {
+                gravity = Gravity.CENTER
+            },
+        )
+
+        setContentView(rootContainer)
+    }
+
+    private fun createSuccessPopupView(isDoc: Boolean, dp: Float): View {
+        val card = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            minimumWidth = (230 * dp).toInt()
+            setPadding((28 * dp).toInt(), (24 * dp).toInt(), (28 * dp).toInt(), (24 * dp).toInt())
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                cornerRadius = 22 * dp
+                setColor(Color.parseColor("#F2111827"))
+            }
+            elevation = 16 * dp
+            visibility = View.GONE
+            alpha = 0f
+        }
+
+        val outerCircle = FrameLayout(this).apply {
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(Color.parseColor("#3810B981"))
+            }
+        }
+
+        val innerCircle = object : View(this) {
+            private val paint = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.WHITE
+                style = android.graphics.Paint.Style.STROKE
+                strokeWidth = 3.2f * dp
+                strokeCap = android.graphics.Paint.Cap.ROUND
+                strokeJoin = android.graphics.Paint.Join.ROUND
+            }
+            private val path = android.graphics.Path()
+
+            override fun onDraw(canvas: android.graphics.Canvas) {
+                super.onDraw(canvas)
+                val w = width.toFloat()
+                val h = height.toFloat()
+                path.reset()
+                path.moveTo(w * 0.28f, h * 0.52f)
+                path.lineTo(w * 0.44f, h * 0.68f)
+                path.lineTo(w * 0.74f, h * 0.36f)
+                canvas.drawPath(path, paint)
+            }
+        }.apply {
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                setColor(Color.parseColor("#10B981"))
+            }
+        }
+
+        outerCircle.addView(
+            innerCircle,
+            FrameLayout.LayoutParams((46 * dp).toInt(), (46 * dp).toInt()).apply {
+                gravity = Gravity.CENTER
+            },
+        )
+
+        card.addView(
+            outerCircle,
+            LinearLayout.LayoutParams((64 * dp).toInt(), (64 * dp).toInt()),
+        )
+
+        val titleView = TextView(this).apply {
+            text = if (isDoc) "Lưu hồ sơ thành công" else "Lưu hóa đơn thành công"
+            textSize = 16f
+            setTextColor(Color.WHITE)
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            isSingleLine = true
+            setPadding(0, (14 * dp).toInt(), 0, (4 * dp).toInt())
+        }
+        card.addView(
+            titleView,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ),
+        )
+
+        val subtitleView = TextView(this).apply {
+            text = "Tệp đã được lưu vào máy"
+            textSize = 13f
+            setTextColor(Color.parseColor("#CCFFFFFF"))
+            gravity = Gravity.CENTER
+            isSingleLine = true
+        }
+        card.addView(
+            subtitleView,
+            LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+            ),
+        )
+
+        return card
+    }
+
+    private fun showSaveSuccessPopup(isDoc: Boolean) {
+        val dp = resources.displayMetrics.density
+        saveBtnView?.apply {
+            text = if (isDoc) "✓   Đã lưu hồ sơ" else "✓   Đã lưu hóa đơn"
+            background = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                cornerRadius = 12 * dp
+                setColor(Color.parseColor("#10B981"))
+            }
+        }
+
+        val popup = successPopupView ?: return
+        popup.animate().cancel()
+        popup.visibility = View.VISIBLE
+        popup.alpha = 0f
+        popup.scaleX = 0.8f
+        popup.scaleY = 0.8f
+        popup.animate()
+            .alpha(1f)
+            .scaleX(1f)
+            .scaleY(1f)
+            .setDuration(220)
+            .withEndAction {
+                popup.postDelayed({
+                    popup.animate()
+                        .alpha(0f)
+                        .setDuration(250)
+                        .withEndAction { popup.visibility = View.GONE }
+                        .start()
+                }, 1600)
+            }
+            .start()
     }
 
     // ── Lưu file sang Downloads ─────────────────────────────────────────
@@ -168,8 +319,7 @@ class WebViewActivity : ComponentActivity() {
                 FileOutputStream(File(dir, fileName)).use { out -> src.inputStream().use { it.copyTo(out) } }
             }
             val isDoc = htmlFilePath.contains("cust_documents") || !htmlFilePath.contains("hoadon")
-            val successMsg = if (isDoc) "✅ Đã lưu hồ sơ \"$fileName\" vào Downloads." else "✅ Đã lưu \"$fileName\" vào Downloads."
-            toast(successMsg)
+            showSaveSuccessPopup(isDoc)
         } catch (e: Exception) {
             toast("Lỗi: ${e.message}")
         }

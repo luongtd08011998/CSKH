@@ -366,8 +366,8 @@ private fun VietQrCard(detail: InvoiceDetail) {
     val qrPngSaver = koinInject<QrPngSaver>()
     val scope = rememberCoroutineScope()
     var isSavingQr by remember { mutableStateOf(false) }
-    var saveFeedback by remember { mutableStateOf<String?>(null) }
-    var saveFeedbackIsError by remember { mutableStateOf(false) }
+    var isSavedSuccess by remember { mutableStateOf(false) }
+    var saveErrorMsg by remember { mutableStateOf<String?>(null) }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -439,15 +439,13 @@ private fun VietQrCard(detail: InvoiceDetail) {
                     if (isSavingQr) return@OutlinedButton
                     scope.launch {
                         isSavingQr = true
-                        saveFeedback = null
+                        saveErrorMsg = null
                         qrPngSaver.savePngFromUrl(imageUrl).fold(
                             onSuccess = {
-                                saveFeedback = it
-                                saveFeedbackIsError = false
+                                isSavedSuccess = true
                             },
                             onFailure = { e ->
-                                saveFeedback = e.message ?: "Không lưu được ảnh"
-                                saveFeedbackIsError = true
+                                saveErrorMsg = e.message ?: "Không lưu được ảnh"
                             },
                         )
                         isSavingQr = false
@@ -458,8 +456,11 @@ private fun VietQrCard(detail: InvoiceDetail) {
                     .fillMaxWidth()
                     .height(44.dp),
                 shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF1976D2)),
-                border = BorderStroke(1.dp, Color(0xFF1976D2)),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = if (isSavedSuccess) Color(0xFFECFDF5) else Color.Transparent,
+                    contentColor = if (isSavedSuccess) Color(0xFF059669) else Color(0xFF1976D2),
+                ),
+                border = BorderStroke(1.dp, if (isSavedSuccess) Color(0xFF10B981) else Color(0xFF1976D2)),
             ) {
                 if (isSavingQr) {
                     CircularProgressIndicator(
@@ -468,17 +469,24 @@ private fun VietQrCard(detail: InvoiceDetail) {
                         color = Color(0xFF1976D2),
                     )
                 } else {
-                    Icon(Icons.Filled.Save, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Icon(
+                        if (isSavedSuccess) Icons.Filled.CheckCircle else Icons.Filled.Save,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
                 }
                 Spacer(modifier = Modifier.size(8.dp))
-                Text("Lưu mã QR về máy", style = MaterialTheme.typography.labelLarge)
+                Text(
+                    if (isSavedSuccess) "Đã lưu ảnh mã QR vào máy" else "Lưu mã QR về máy",
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
+                )
             }
 
-            saveFeedback?.let { msg ->
+            saveErrorMsg?.let { msg ->
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = msg,
-                    color = if (saveFeedbackIsError) MaterialTheme.colorScheme.error else Color(0xFF2E7D32),
+                    color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
                     textAlign = TextAlign.Center,
                 )

@@ -21,8 +21,8 @@ import kotlinx.serialization.json.Json
 class RegisterRepositoryImpl : RegisterRepository {
 
     companion object {
-        private const val BASE_URL = "https://toctienltd.vn"
-        private const val AUTH_HEADER = "Basic cGh1b25nbnZAdG9jdGllbmx0ZC52bjoxMTExMTEx"
+        private const val BASE_URL = "https://pay.toctienltd.vn"
+        private const val AUTH_HEADER = "Basic bHVvbmd0ZEB0b2N0aWVubHRkLnZuOjEyMzEyMw=="
     }
 
     private val client by lazy {
@@ -45,6 +45,9 @@ class RegisterRepositoryImpl : RegisterRepository {
             header(HttpHeaders.Authorization, AUTH_HEADER)
             setBody(RegisterRequestDto(name, phone, waterMeterAddress, email))
         }
+        if (response.status.value !in 200..299) {
+            error("HTTP ${response.status.value}")
+        }
         val body = response.body<RegisterResponseDto>()
         if (body.retCode == "ERR_OK") {
             body.retMsg ?: "Đăng ký thành công"
@@ -58,7 +61,14 @@ class RegisterRepositoryImpl : RegisterRepository {
         val response = client.get(url) {
             header(HttpHeaders.Authorization, AUTH_HEADER)
         }
+        if (response.status.value !in 200..299) {
+            error("HTTP ${response.status.value}")
+        }
         val text = response.bodyAsText().trim().removeSurrounding("\"")
-        if (text.isNotBlank()) text else error("Không lấy được thời gian đăng ký")
+        if (text.isNotBlank() && !text.startsWith("<!DOCTYPE", ignoreCase = true) && !text.startsWith("<html", ignoreCase = true)) {
+            text
+        } else {
+            error("Dữ liệu chưa được lưu vào CSDL (API register_get/$phone trả về rỗng).")
+        }
     }
 }

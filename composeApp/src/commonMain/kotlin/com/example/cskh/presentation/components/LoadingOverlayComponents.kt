@@ -58,11 +58,12 @@ fun DataLoadingStatusBar(
     isLoading: Boolean,
     isSlowConnection: Boolean,
     onRetry: () -> Unit,
+    hasError: Boolean = false,
     modifier: Modifier = Modifier,
 ) {
     AnimatedContent(
         targetState = when {
-            isSlowConnection -> LoadingBarState.SlowConnection
+            isSlowConnection || (!isLoading && hasError) -> LoadingBarState.SlowConnection
             isLoading -> LoadingBarState.Loading
             else -> LoadingBarState.Hidden
         },

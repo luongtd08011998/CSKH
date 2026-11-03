@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.material3.Surface
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -530,6 +531,14 @@ private fun AppBottomBar(
     val selectedProfile =
         currentDestination?.hierarchy?.any { it.route?.contains("CustomerProfile") == true } == true
 
+    val deepNavy = Color(0xFF0C2340)
+    val brightWaterBlue = Color(0xFF0288D1)
+    val navItemColors = NavigationBarItemDefaults.colors(
+        selectedIconColor = brightWaterBlue,
+        unselectedIconColor = deepNavy.copy(alpha = 0.70f),
+        indicatorColor = Color(0xFFE0F2FE),
+    )
+
     androidx.compose.material3.Surface(
         color = Color.White,
         shadowElevation = 8.dp,
@@ -546,18 +555,19 @@ private fun AppBottomBar(
             NavigationBarItem(
                 selected = selectedHome,
                 onClick = onSelectHome,
-                icon = { Icon(Icons.Filled.Home, contentDescription = null, modifier = Modifier.size(24.dp)) },
-                label = { Text("Trang chủ", maxLines = 1) },
+                colors = navItemColors,
+                icon = { Icon(Icons.Filled.Home, contentDescription = "Trang chủ", modifier = Modifier.size(28.dp)) },
             )
             NavigationBarItem(
                 selected = selectedInvoices,
                 onClick = onSelectInvoices,
-                icon = { Icon(Icons.AutoMirrored.Filled.ReceiptLong, contentDescription = null, modifier = Modifier.size(24.dp)) },
-                label = { Text("Hóa đơn", maxLines = 1) },
+                colors = navItemColors,
+                icon = { Icon(Icons.AutoMirrored.Filled.ReceiptLong, contentDescription = "Hóa đơn", modifier = Modifier.size(28.dp)) },
             )
             NavigationBarItem(
                 selected = selectedNotifications,
                 onClick = onSelectNotifications,
+                colors = navItemColors,
                 icon = {
                     BadgedBox(
                         badge = {
@@ -571,22 +581,21 @@ private fun AppBottomBar(
                             }
                         },
                     ) {
-                        Icon(Icons.Filled.Notifications, contentDescription = null, modifier = Modifier.size(24.dp))
+                        Icon(Icons.Filled.Notifications, contentDescription = "Thông báo", modifier = Modifier.size(28.dp))
                     }
                 },
-                label = { Text("Thông báo", maxLines = 1) },
             )
             NavigationBarItem(
                 selected = selectedFeedback,
                 onClick = onSelectFeedback,
-                icon = { Icon(Icons.Filled.Feedback, contentDescription = null, modifier = Modifier.size(24.dp)) },
-                label = { Text("Phản ánh", maxLines = 1) },
+                colors = navItemColors,
+                icon = { Icon(Icons.Filled.Feedback, contentDescription = "Phản ánh", modifier = Modifier.size(28.dp)) },
             )
             NavigationBarItem(
                 selected = selectedProfile,
                 onClick = onSelectProfile,
-                icon = { Icon(Icons.Filled.Person, contentDescription = null, modifier = Modifier.size(24.dp)) },
-                label = { Text("Tài khoản", maxLines = 1) },
+                colors = navItemColors,
+                icon = { Icon(Icons.Filled.Person, contentDescription = "Tài khoản", modifier = Modifier.size(28.dp)) },
             )
         }
     }

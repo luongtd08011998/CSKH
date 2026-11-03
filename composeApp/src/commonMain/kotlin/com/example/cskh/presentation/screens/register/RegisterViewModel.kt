@@ -64,13 +64,19 @@ class RegisterViewModel(
                 email = s.email.trim(),
             ).fold(
                 onSuccess = {
-                    // Sau khi đăng ký thành công, lấy thời gian đăng ký
+                    // Sau khi đăng ký thành công, bắt buộc phải lấy được thời gian đăng ký từ CSDL
                     registerRepository.getRegistrationTime(s.phone.trim()).fold(
                         onSuccess = { time ->
                             _state.update { it.copy(isSubmitting = false, registrationTime = time) }
                         },
-                        onFailure = {
-                            _state.update { it.copy(isSubmitting = false, registrationTime = it.registrationTime) }
+                        onFailure = { e ->
+                            _state.update {
+                                it.copy(
+                                    isSubmitting = false,
+                                    registrationTime = null,
+                                    errorMessage = e.message ?: "Không lấy được thời gian đăng ký từ máy chủ.",
+                                )
+                            }
                         },
                     )
                 },

@@ -23,7 +23,7 @@ private val fallbackDns = object : Dns {
             Dns.SYSTEM.lookup(hostname)
         } catch (e: UnknownHostException) {
             when (hostname.lowercase()) {
-                "beta.toctienltd.vn", "toctienltd.vn" -> {
+                "beta.toctienltd.vn", "pay.toctienltd.vn", "toctienltd.vn" -> {
                     listOf(InetAddress.getByName("125.253.121.171"))
                 }
                 else -> throw e
@@ -37,8 +37,10 @@ actual fun createHttpClientEngine(): HttpClientEngine {
     val okHttpClient = OkHttpClient.Builder()
         .dns(fallbackDns)
         .hostnameVerifier { hostname, session ->
-            if (hostname.equals("beta.toctienltd.vn", ignoreCase = true)) {
-                defaultVerifier.verify("toctienltd.vn", session)
+            if (hostname.equals("beta.toctienltd.vn", ignoreCase = true) ||
+                hostname.equals("pay.toctienltd.vn", ignoreCase = true)
+            ) {
+                defaultVerifier.verify(hostname, session) || defaultVerifier.verify("toctienltd.vn", session)
             } else {
                 defaultVerifier.verify(hostname, session)
             }

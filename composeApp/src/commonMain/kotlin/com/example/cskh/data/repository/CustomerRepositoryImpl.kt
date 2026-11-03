@@ -40,7 +40,7 @@ class CustomerRepositoryImpl(
     }
 
     override suspend fun getDocumentList(code: String, phone: String): Result<List<CustomerDocument>> = runCatching {
-        val url = "https://toctienltd.vn/cm-portlet/api/cust_doc_list?code=$code&phone=$phone"
+        val url = "https://pay.toctienltd.vn/cm-portlet/api/cust_doc_list?code=$code&phone=$phone"
         val response = client.get(url)
         if (response.status.value !in 200..299) {
             val text = runCatching { response.bodyAsText() }.getOrNull()
@@ -51,7 +51,7 @@ class CustomerRepositoryImpl(
     }
 
     override suspend fun downloadDocument(fullname: String): Result<ByteArray> = runCatching {
-        val response = client.get("https://toctienltd.vn/cm-portlet/api/cust_doc") {
+        val response = client.get("https://pay.toctienltd.vn/cm-portlet/api/cust_doc") {
             parameter("f", fullname)
         }
         if (response.status.value !in 200..299) {
